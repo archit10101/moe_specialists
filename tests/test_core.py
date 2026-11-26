@@ -6,7 +6,7 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from repro.clusters.build import fit_centroids, sinkhorn, within_split_permutation
+from repro.clusters.build import cluster_tables, fit_centroids, sinkhorn, view_starts, within_split_permutation
 from repro.config import EXPERIMENTS, FULL, SMOKE, ModelCfg, runnable
 from repro.eval.metrics import matched_difference, quantile_bins, swap_specificity
 from repro.model.losses import edl_layer_loss
@@ -14,7 +14,7 @@ from repro.model.moe import MoEGPT, token_ce
 from repro.model.residual import Bank, CtxRouter, causal_window_mean
 from repro.pipeline import build_graph
 
-TINY = ModelCfg(vocab_size=64, ctx=32, n_layer=2, n_head=2, d=32, n_exp=8, top_k=2, expert_hidden=16,
+TINY = ModelCfg(vocab_size=64, ctx=32, n_layer=3, n_head=2, d=32, n_exp=8, top_k=2, dense_hidden=32, expert_hidden=16,
                 shared_hidden=32)
 
 
@@ -22,8 +22,7 @@ TINY = ModelCfg(vocab_size=64, ctx=32, n_layer=2, n_head=2, d=32, n_exp=8, top_k
 def test_doc_parameter_counts():
     assert sum(p.numel() for p in Bank(384, 16, 256).parameters()) == 3_145_728          # doc §23
     assert sum(p.numel() for p in CtxRouter(384, 16, 64).parameters()) == 75_152        # doc §27
-    n = MoEGPT(FULL.model).param_count()
-    assert abs(n - 103_609_728) / 103_609_728 < 0.02                                    # doc §2.2 (±2%)
+    assert MoEGPT(FULL.model).param_count() == 103_609_728                             # doc §2.2, exact
 
 
 # ------------------------------------------------------------------ causality
@@ -125,6 +124,70 @@ def test_shuffled_tables_are_mass_matched_inside_every_split():
         m = split == s
         assert (np.bincount(hard[perm][m], minlength=16) == np.bincount(hard[m], minlength=16)).all()
     assert (hard[perm] != hard).mean() > 0.4                           # and actually shuffles
+
+
+def test_shuffle_matches_token_mass_within_length_bins():
+    """With real papers of very different lengths, a plain permutation does not match token mass; the
+    original permutes within paper-length quantile bins (orv1_tables.py)."""
+    rng = np.random.default_rng(2)
+    split = np.repeat([0, 1], [600, 600])
+    mass = rng.lognormal(9, 1, len(split))
+    hard = (mass > np.median(mass)).astype(int) * 3 + rng.integers(0, 3, len(split))   # clusters track length
+    perm = within_split_permutation(split, mass, 20)
+    assert (split[perm] == split).all()
+    for s in (0, 1):
+        m = split == s
+        assert (np.bincount(hard[perm][m], minlength=6) == np.bincount(hard[m], minlength=6)).all()
+        sem = np.bincount(hard[m], weights=mass[m], minlength=6)
+        shuf = np.bincount(hard[perm][m], weights=mass[m], minlength=6)
+        assert np.abs(shuf / sem - 1).max() < 0.25                     # token mass approximately kept
+
+
+def test_view_starts_follow_the_original():
+    assert view_starts(100, 256) == [0]                                 # short paper: one view of all of it
+    assert view_starts(600, 256) == [172]                               # one centred view
+    v = view_starts(12_000, 256)
+    assert len(v) == 4 and v[0] == 0 and v[-1] == 12_000 - 256          # spread over the whole paper
+    assert all(b - a >= 512 for a, b in zip(v, v[1:]))                  # views separated by >= 256 tokens
+
+
+def test_cluster_posteriors_are_unbalanced_softmax_and_sharpened_by_squaring():
+    rng = np.random.default_rng(0)
+    centers = rng.normal(size=(4, 16))
+    owner = np.repeat(np.arange(400), 2)
+    lab = np.repeat(np.arange(4), 100)
+    Xv = centers[lab[owner]] + 0.5 * rng.normal(size=(800, 16))
+    Xv /= np.linalg.norm(Xv, axis=1, keepdims=True)
+    t = cluster_tables(Xv.astype(np.float32), owner, 400, np.ones(400, bool), 4, SMOKE)
+    q, sharp = t["soft"].astype(np.float64), t["sharp"].astype(np.float64)
+    assert np.allclose(q.sum(1), 1, atol=1e-5) and (t["hard"] == q.argmax(1)).all()
+    ref = q ** 2 / (q ** 2).sum(1, keepdims=True)
+    assert np.allclose(sharp, ref, atol=1e-5)
+    from repro.eval.metrics import nmi
+    assert nmi(t["hard"], lab, 4, 4) > 0.9
+
+
+def test_lr_schedules():
+    from repro.train.common import lr_at
+    assert lr_at(0, 100, 1.0, 0.1, 0.1, "wsd") == pytest.approx(0.1)            # warmup
+    assert lr_at(50, 100, 1.0, 0.1, 0.1, "wsd") == 1.0                          # stable
+    assert lr_at(99, 100, 1.0, 0.1, 0.1, "wsd") == pytest.approx(0.1)           # decayed to min at the end
+    assert lr_at(10, 100, 1.0, 0.1, 0.0, "constant", warmup_steps=5) == 1.0
+
+
+def test_bank_seed_uses_the_same_base_seed():
+    from repro.config import FULL as P
+    jobs = {j.key: j for j in build_graph(P, "core")}
+    for s in range(4):
+        for r in ("sem", "shuf", "tok"):
+            assert f"base:base.token4:s{s}" in jobs[f"bank:bank.{r}:s{s}"].deps
+
+
+def test_router_trains_on_papers_nothing_else_saw():
+    from repro.config import FULL as P, get_experiment, router_cfg
+    for e in EXPERIMENTS:
+        if e.kind == "router":
+            assert router_cfg(P, e).split not in ("base", "bank", "val", "test")
 
 
 # ------------------------------------------------------------------ specialisation metrics

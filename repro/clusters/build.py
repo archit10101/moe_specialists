@@ -1,14 +1,17 @@
 """Stage `cluster`: label-free paper clusters and every group table the experiments use.
 
-1. Embed each paper's first ``embed_tokens`` tokens with a frozen encoder
-   (e5-base-v2 with the "passage: " prefix, MiniLM, or tf-idf + SVD).
-2. Fit spherical k-means with balanced (Sinkhorn) assignments on a sample of base-split papers.
-3. Assign every paper with Sinkhorn over all papers: ``soft`` (temp soft_temp), ``sharp`` (sharp_temp),
-   ``hard`` = argmax of sharp. Cluster sizes are therefore balanced.
-4. Shuffled controls permute whole rows across papers *within each split*, so in every split (the bank
-   split the specialists train on, the val split they are scored on) each shuffled cluster has exactly
-   as many papers as its semantic twin but random content ("persistent, mass-matched random paper
-   groupings", doc §2.5).
+Follows the original pipeline (gc_lib.py, gc_discover.py, sem_tables.py) except where noted:
+1. Each paper is cut into up to ``max_views`` views of ``view_tokens`` tokens spread over the whole paper
+   (gc_lib.view_starts); papers shorter than one view are embedded whole (the original left them unlabelled).
+2. Views are embedded with a frozen encoder (bge-small-en-v1.5, CLS pooling, L2-normalised; MiniLM / tf-idf
+   for B7) and z-scored per dimension with the statistics of the fit papers.
+3. Centroids: spherical k-means with Sinkhorn-balanced assignments, fit on base-split papers (the original
+   trained a SwAV-style prototype network with batch Sinkhorn targets; RECONSTRUCTION.md).
+4. q = softmax(mean over a paper's views of cos(view, centroid) / assign_temp), not balanced at assignment;
+   ``hard`` = argmax q; ``soft`` = q; ``sharp`` (Semantic C6) = q**sharp_power renormalised.
+5. Shuffled controls permute whole rows across papers within each split and within paper-length quantile
+   bins (original orv1_tables.py), so in every split each shuffled cluster has exactly as many papers as its
+   semantic twin and about the same token mass, but random content (doc §2.5).
 
 Writes ``$WORK/groups/<table>.npz`` (hard, soft?, k) and ``$WORK/groups/summary.json``.
 """
@@ -25,26 +28,42 @@ from ..data.prepare import Tokenizer
 from ..utils import data_dir, device, groups_dir, is_done, log, mark_done, write_json
 from ..eval.metrics import nmi
 
-ENCODERS = {"e5": ("intfloat/e5-base-v2", "passage: ", 512),
-            "minilm": ("sentence-transformers/all-MiniLM-L6-v2", "", 256)}
+ENCODERS = {"bge": ("BAAI/bge-small-en-v1.5", "", 512, "cls"),
+            "e5": ("intfloat/e5-base-v2", "passage: ", 512, "mean"),
+            "minilm": ("sentence-transformers/all-MiniLM-L6-v2", "", 256, "mean")}
 SHUFFLE_SEED = 999
 
 
 # ------------------------------------------------------------------------------ texts
 
-def paper_heads(p: Profile) -> list[str]:
-    """Decoded first embed_tokens tokens of every paper, in global paper-id order."""
+def view_starts(n: int, v: int, max_views: int = 4) -> list[int]:
+    """Starts of up to max_views non-overlapping v-token views separated by >= v tokens, spread over the
+    paper (original gc_lib.view_starts). A paper shorter than one view gets one view of the whole paper."""
+    if n <= v:
+        return [0]
+    nv = min(max_views, (n + v) // (2 * v))
+    if nv <= 1:
+        return [(n - v) // 2]
+    return [int(round(i * (n - v) / (nv - 1))) for i in range(nv)]
+
+
+def paper_views(p: Profile) -> tuple[list[str], np.ndarray]:
+    """Decoded views of every paper in global paper-id order: (texts, owner paper id of each view)."""
     meta, docs = load_meta(p), load_docs(p)
     tok = Tokenizer(meta["tokenizer"])
-    texts = []
+    v = p.cluster.view_tokens
+    texts, owner, pid = [], [], 0
     for s_idx, s in enumerate(meta["split_order"]):
         stream = np.memmap(data_dir(p) / f"{s}.tokens.bin", dtype=np.uint16, mode="r")
         lens = docs["n_tokens"][docs["split"] == s_idx]
         starts = np.concatenate([[0], np.cumsum(lens)[:-1]])
         for st, n in zip(starts, lens):
-            texts.append(tok.decode(stream[st: st + min(n, p.cluster.embed_tokens)]))
-    assert len(texts) == meta["n_docs"]
-    return texts
+            for o in view_starts(int(n), v, p.cluster.max_views):
+                texts.append(tok.decode(stream[st + o: st + min(n, o + v)]))
+                owner.append(pid)
+            pid += 1
+    assert pid == meta["n_docs"]
+    return texts, np.asarray(owner, np.int64)
 
 
 # ------------------------------------------------------------------------------ embeddings
@@ -59,7 +78,7 @@ def embed(texts: list[str], embedder: str, dim_tfidf: int = 256) -> np.ndarray:
         E = TruncatedSVD(k, random_state=0).fit_transform(X)
         return (E / (np.linalg.norm(E, axis=1, keepdims=True) + 1e-8)).astype(np.float32)
     from transformers import AutoModel, AutoTokenizer
-    name, prefix, max_len = ENCODERS[embedder]
+    name, prefix, max_len, pooling = ENCODERS[embedder]
     dev = device()
     tk = AutoTokenizer.from_pretrained(name)
     model = AutoModel.from_pretrained(name).to(dev).eval()
@@ -71,8 +90,11 @@ def embed(texts: list[str], embedder: str, dim_tfidf: int = 256) -> np.ndarray:
         enc = tk([prefix + t for t in texts[i:i + bs]], max_length=max_len, truncation=True,
                  padding=True, return_tensors="pt").to(dev)
         h = model(**enc).last_hidden_state.float()
-        m = enc["attention_mask"].unsqueeze(-1).float()
-        e = (h * m).sum(1) / m.sum(1).clamp_min(1)
+        if pooling == "cls":
+            e = h[:, 0]
+        else:
+            m = enc["attention_mask"].unsqueeze(-1).float()
+            e = (h * m).sum(1) / m.sum(1).clamp_min(1)
         out.append(torch.nn.functional.normalize(e, dim=-1).cpu())
         if (i // bs) % 100 == 0:
             log(f"  {embedder}: embedded {i + len(texts[i:i + bs]):,}/{len(texts):,}")
@@ -114,17 +136,31 @@ def fit_centroids(X: np.ndarray, k: int, iters: int, sk_iters: int, seed: int = 
     return C
 
 
-def cluster_tables(X: np.ndarray, base_mask: np.ndarray, k: int, p: Profile) -> dict:
+def paper_mean(X: np.ndarray, owner: np.ndarray, n: int) -> np.ndarray:
+    out = np.zeros((n, X.shape[1]), np.float64)
+    np.add.at(out, owner, X)
+    return out / np.maximum(1, np.bincount(owner, minlength=n))[:, None]
+
+
+def cluster_tables(Xv: np.ndarray, owner: np.ndarray, n: int, base_mask: np.ndarray, k: int, p: Profile) -> dict:
+    """Xv [views, dim] L2-normalised view embeddings; owner [views] paper id. Returns hard / soft / sharp."""
     cc = p.cluster
     rng = np.random.default_rng(0)
     fit_idx = np.flatnonzero(base_mask)
     fit_idx = rng.choice(fit_idx, min(cc.fit_docs, len(fit_idx)), replace=False)
-    C = fit_centroids(X[fit_idx], k, cc.kmeans_iters, cc.sinkhorn_iters)
-    S = torch.from_numpy(X) @ C.T
-    soft = sinkhorn(S, cc.soft_temp, cc.sinkhorn_iters).numpy()
-    sharp = sinkhorn(S, cc.sharp_temp, cc.sinkhorn_iters).numpy()
-    hard = sharp.argmax(1)
-    return dict(hard=hard, soft=soft, sharp=sharp)
+    fit_views = np.isin(owner, fit_idx)
+    mu, sd = Xv[fit_views].mean(0), Xv[fit_views].std(0) + 1e-6         # z-score on the fit papers
+    Z = (Xv - mu) / sd
+    Z /= np.linalg.norm(Z, axis=1, keepdims=True) + 1e-8
+    P = paper_mean(Z, owner, n)
+    P /= np.linalg.norm(P, axis=1, keepdims=True) + 1e-8
+    C = fit_centroids(P[fit_idx].astype(np.float32), k, cc.kmeans_iters, cc.sinkhorn_iters)
+    logits = paper_mean(Z @ C.numpy().T.astype(np.float64), owner, n) / cc.assign_temp
+    q = np.exp(logits - logits.max(1, keepdims=True))
+    q /= q.sum(1, keepdims=True)
+    sharp = q ** cc.sharp_power
+    sharp /= sharp.sum(1, keepdims=True)
+    return dict(hard=q.argmax(1), soft=q.astype(np.float32), sharp=sharp.astype(np.float32))
 
 
 # ------------------------------------------------------------------------------ stage
@@ -138,15 +174,24 @@ def save_table(p: Profile, name: str, hard, k, soft=None) -> None:
     np.savez(d / f"{name}.npz", **kw)
 
 
-def within_split_permutation(split: np.ndarray, seed: int = SHUFFLE_SEED) -> np.ndarray:
-    """Permutation of paper ids that only swaps papers inside the same split, so a shuffled table has
-    exactly its semantic twin's cluster sizes in every split (the bank split the specialists train on,
-    the val split they are scored on), not just in total."""
+def within_split_permutation(split: np.ndarray, mass: np.ndarray | None = None, bins: int = 1,
+                             seed: int = SHUFFLE_SEED) -> np.ndarray:
+    """Permutation of paper ids that only swaps papers inside the same split and, if ``mass`` is given,
+    inside the same paper-length quantile bin of that split (original orv1_tables.py: 20 bins). A shuffled
+    table then has exactly its semantic twin's paper counts per cluster in every split (the bank split the
+    specialists train on, the val split they are scored on) and about the same token mass."""
     rng = np.random.default_rng(seed)
     perm = np.arange(len(split))
     for s in np.unique(split):
         ix = np.flatnonzero(split == s)
-        perm[ix] = ix[rng.permutation(len(ix))]
+        if mass is None or bins <= 1:
+            groups = [ix]
+        else:
+            edges = np.quantile(mass[ix], np.linspace(0, 1, bins + 1)[1:-1])
+            b = np.searchsorted(edges, mass[ix], side="right")
+            groups = [ix[b == j] for j in np.unique(b)]
+        for g in groups:
+            perm[g] = g[rng.permutation(len(g))]
     return perm
 
 
@@ -158,7 +203,7 @@ def build(p: Profile) -> None:
     meta, docs = load_meta(p), load_docs(p)
     n = meta["n_docs"]
     base_mask = docs["split"] == meta["split_order"].index("base")
-    perm = within_split_permutation(docs["split"])
+    perm = within_split_permutation(docs["split"], docs["n_tokens"], p.cluster.shuffle_bins)
     assert len(perm) == n
     summary = {}
 
@@ -166,13 +211,14 @@ def build(p: Profile) -> None:
     save_table(p, "domain", dom, len(meta["domains"]))
     save_table(p, "domain_shuf", dom[perm], len(meta["domains"]))
 
-    log("reading paper heads")
-    texts = paper_heads(p)
+    log("reading paper views")
+    texts, owner = paper_views(p)
+    log(f"  {len(texts):,} views of {n:,} papers")
     emb_cache = {}
 
     def emb(name):
         if name not in emb_cache:
-            log(f"embedding {n:,} papers with {name}")
+            log(f"embedding {len(texts):,} views with {name}")
             emb_cache[name] = embed(texts, name)
             np.save(out / f"emb_{name}.npy", emb_cache[name].astype(np.float16))
         return emb_cache[name]
@@ -187,7 +233,7 @@ def build(p: Profile) -> None:
 
     cc = p.cluster
     for k in sorted({cc.main_k, *cc.alt_ks}):
-        t = cluster_tables(emb(cc.embedder), base_mask, k, p)
+        t = cluster_tables(emb(cc.embedder), owner, n, base_mask, k, p)
         names = ["sem", "sem_sharp"] if k == cc.main_k else []
         if k in cc.alt_ks:
             names.append(f"sem_k{k}")
@@ -197,7 +243,7 @@ def build(p: Profile) -> None:
             save_table(p, nm + "_shuf", t["hard"][perm], k, soft[perm])
             record(nm, t["hard"], k)
     for e in cc.extra_embedders:
-        t = cluster_tables(emb(e), base_mask, cc.main_k, p)
+        t = cluster_tables(emb(e), owner, n, base_mask, cc.main_k, p)
         save_table(p, e, t["hard"], cc.main_k, t["soft"])
         record(e, t["hard"], cc.main_k)
     summary["domain"] = dict(k=len(meta["domains"]), nmi_domain=1.0)

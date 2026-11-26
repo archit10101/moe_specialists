@@ -17,11 +17,11 @@ from .moe import RMSNorm
 
 
 class Bank(nn.Module):
-    def __init__(self, d: int, n: int, hidden: int):
+    def __init__(self, d: int, n: int, hidden: int, init_std: float = 0.02):
         super().__init__()
         self.n, self.d, self.hidden = n, d, hidden
         self.norm = RMSNorm(d, learnable=False)
-        self.w1 = nn.Parameter(torch.randn(n, d, hidden) / math.sqrt(d))
+        self.w1 = nn.Parameter(torch.randn(n, d, hidden) * init_std)   # original: N(0, 0.02^2)
         self.w2 = nn.Parameter(torch.zeros(n, hidden, d))
 
     def delta_one(self, x: torch.Tensor, e: int) -> torch.Tensor:
@@ -83,7 +83,7 @@ def causal_window_mean(h: torch.Tensor, n: int) -> torch.Tensor:
 
 
 class CtxRouter(nn.Module):
-    """§27 router:  [RMSNorm(h_t), RMSNorm(mean(h_{t-w+1..t}))] -> Linear(no bias) -> GRU -> n logits.
+    """§27 router:  [RMSNorm(h_t), mean(RMSNorm(h_{t-w+1..t}))] -> Linear(no bias) -> GRU -> n logits.
     d=384, w=16, hidden 64, n=16  ->  768*64 + GRU(64,64) 24,960 + 64*16+16  =  75,152 parameters.
     Strictly causal: the GRU runs left to right and the window mean only looks back."""
 
@@ -105,7 +105,7 @@ class CtxRouter(nn.Module):
         if self.inputs in ("both", "token"):
             parts.append(self.norm(h.float()))
         if self.inputs in ("both", "context"):
-            parts.append(self.norm(causal_window_mean(h, self.w)))
+            parts.append(causal_window_mean(self.norm(h.float()), self.w))   # mean of normalised tokens (original)
         return torch.cat(parts, -1)
 
     def forward(self, h):

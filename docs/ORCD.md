@@ -76,7 +76,7 @@ Steps 1-5 below are the same pipeline run by hand, one stage at a time.
 ```
 
 This creates the conda env `repro_moe` (torch CUDA build), downloads the five M2D2 arXiv archives
-(~11.7 GB), the GPT-2 BPE and the e5 / MiniLM encoders into `./cache`, checks that everything loads
+(~11.7 GB), the GPT-2 BPE and the bge-small / MiniLM encoders into `./cache`, checks that everything loads
 **offline**, and runs the CPU tests.
 
 ## 2. Smoke test on a GPU node (~15 min)

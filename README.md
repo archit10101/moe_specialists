@@ -1,8 +1,10 @@
 # Reproducing the successful subject-specialisation MoE experiments
 
-This repository is an independent reimplementation, written only from `docs/source_history.md` (the
-experiment history from lambda2; we never had the original code or data). It re-tests the three
-results that history reports as positive, plus ten ablations.
+This repository is a reimplementation of the experiments in `docs/source_history.md` (the experiment history
+from lambda2). It was first written from that doc alone. Once the original author's code became available
+(`moe-research-zach/` on `main`, which has no checkpoints or results), we aligned every setting that could change
+a conclusion with it. `docs/RECONSTRUCTION.md` lists what came from where and the differences we kept. The repo
+re-tests the three results the history reports as positive, plus ablations.
 
 | # | claim (doc §) | doc result | what is run here |
 |---|---|---|---|
@@ -25,7 +27,7 @@ repro/
   run.py             CLI: one sub-command per pipeline stage
   pipeline.py        job graph (prepare → cluster → base → bank → router → report)
   data/              prepare.py (M2D2 → paper-disjoint token streams), loader.py (batches, group tables)
-  clusters/build.py  e5 embeddings → Sinkhorn-balanced spherical k-means → semantic / shuffled tables
+  clusters/build.py  bge-small multi-view embeddings → balanced k-means centroids → softmax posteriors → semantic / shuffled tables
   model/             moe.py (TOKEN-4 MoE), losses.py (Switch, z, EDL), residual.py (bank, routers)
   train/             base.py, residual.py (banks), router.py
   eval/              base_eval.py (CE, NMI, FSI, interaction, exposure-matched), bank_eval.py (swap matrix),

@@ -85,6 +85,7 @@ def evaluate_base(p: Profile, exp: Experiment, seed: int, ckpt: str = "final") -
         return {}
     ec, mc = p.eval, p.model
     model = load_base(p, exp.name, seed, ckpt)
+    n_moe = len(model.moe_layers())          # layer indices below are MoE-layer indices (block 0 is dense)
     tables = {t: GroupTable.load(p, t) for t in TABLES}
     res = dict(experiment=exp.name, seed=seed, ckpt=ckpt)
 
@@ -95,8 +96,8 @@ def evaluate_base(p: Profile, exp: Experiment, seed: int, ckpt: str = "final") -
     res["val_tokens"] = int(len(v["ce"]))
     for t, tab in tables.items():
         c = v["counts"][t]
-        res[f"nmi_{t}"] = float(np.mean([nmi_from_counts(c[l]) for l in range(mc.n_layer)]))
-        res[f"nmi_{t}_per_layer"] = [nmi_from_counts(c[l]) for l in range(mc.n_layer)]
+        res[f"nmi_{t}"] = float(np.mean([nmi_from_counts(c[l]) for l in range(n_moe)]))
+        res[f"nmi_{t}_per_layer"] = [nmi_from_counts(c[l]) for l in range(n_moe)]
     log(f"{exp.name}/s{seed}: val CE {res['val_ce']:.4f}  NMI domain {res['nmi_domain']:.4f} sem {res['nmi_sem']:.4f}")
 
     # ---- probe set (calib split)
@@ -121,14 +122,14 @@ def evaluate_base(p: Profile, exp: Experiment, seed: int, ckpt: str = "final") -
         for gi in range(tables[t].k):
             if (g == gi).sum() == 0:
                 continue
-            bans = {l: np.argsort(-lifts[t][l, gi])[: ec.fsi_experts_per_layer].tolist() for l in range(mc.n_layer)}
+            bans = {l: np.argsort(-lifts[t][l, gi])[: ec.fsi_experts_per_layer].tolist() for l in range(n_moe)}
             d = banned_ce(bans) - base["ce"]
             vals.append(d[g == gi].mean() - d[g != gi].mean())
         res[f"fsi_{t}"] = summarize(vals)
     log(f"{exp.name}/s{seed}: FSI domain {res['fsi_domain']['mean']:.5f} sem {res['fsi_sem']['mean']:.5f}")
 
     # ---- per-expert replacement interaction (ordinary + exposure-matched)
-    layers = list(ec.interaction_layers) or list(range(mc.n_layer))
+    layers = list(ec.interaction_layers) or list(range(n_moe))
     cells = {t: [] for t in groups}
     pos_bin = base["pos"] * 4 // mc.ctx
     ce_bin = quantile_bins(base["ce"], 4)

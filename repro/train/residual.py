@@ -15,7 +15,7 @@ import time
 
 import torch
 
-from ..config import BankCfg, Experiment, Profile, bank_cfg, get_experiment, to_dict
+from ..config import BankCfg, Experiment, Profile, bank_base_seed, bank_cfg, get_experiment, to_dict
 from ..data.loader import GroupTable, Split, TrainStream, to_device
 from ..model.moe import token_ce
 from ..model.residual import Bank, TokenRouter
@@ -40,7 +40,7 @@ class BankModel(torch.nn.Module):
         super().__init__()
         self.bc = bc
         n, hidden = bank_shape(p, bc)
-        self.bank = Bank(p.model.d, n, hidden)
+        self.bank = Bank(p.model.d, n, hidden, bc.init_std)
         self.router = TokenRouter(p.model.d, n) if bc.routing == "token" else None
         self.table = GroupTable.load(p, bc.groups) if bc.routing == "oracle" else None
 
@@ -64,24 +64,25 @@ def train_bank(p: Profile, exp: Experiment, seed: int) -> None:
     rd.mkdir(parents=True, exist_ok=True)
     bc = bank_cfg(p, exp)
     dev, tc, mc = device(), p.train, p.model
-    base = load_base(p, bc.base, bc.base_seed, bc.base_ckpt)
+    base_seed = bank_base_seed(bc, seed)
+    base = load_base(p, bc.base, base_seed, bc.base_ckpt)
     seed_all(1000 + seed)
     bm = BankModel(p, bc).to(dev)
     n_params = sum(q.numel() for q in bm.bank.parameters())
     log(f"{exp.name}/s{seed}: {bm.bank.n} specialists x {bm.bank.hidden} hidden = {n_params:,} params "
-        f"({bc.routing} routing, groups {bc.groups}, base {bc.base}/s{bc.base_seed}:{bc.base_ckpt})")
+        f"({bc.routing} routing, groups {bc.groups}, base {bc.base}/s{base_seed}:{bc.base_ckpt})")
 
-    accum = max(1, tc.batch_tokens // (tc.micro_bs * mc.ctx))
+    accum = max(1, bc.batch_tokens // (tc.micro_bs * mc.ctx))
     total = math.ceil(bc.tokens / (accum * tc.micro_bs * mc.ctx))
-    stream = TrainStream(Split(p, "bank"), 1000 + seed, tc.micro_bs, accum)
-    opt = make_optimizer(bm.parameters(), bc.lr, 0.0, dev)
+    stream = TrainStream(Split(p, "bank"), bc.stream_seed, tc.micro_bs, accum)
+    opt = make_optimizer(bm.parameters(), bc.lr, bc.weight_decay, dev)
     ckpt = rd / "ckpt_last.pt"
     step, extra = 0, dict(log=[])
     if ckpt.exists():
         step, extra = load_state(ckpt, {"bank": bm}, opt)
     budget, t0 = Budget(), time.time()
     while step < total:
-        set_lr(opt, lr_at(step, total, bc.lr, bc.lr * 0.1, 0.02))
+        set_lr(opt, lr_at(step, total, bc.lr, bc.lr, 0.0, "constant", warmup_steps=bc.warmup_steps))
         sums = dict(ce=0.0, base_ce=0.0, balance=0.0)
         for micro in range(accum):
             b = to_device(stream.micro_batch(step, micro), dev)
@@ -125,7 +126,7 @@ def load_bank(p: Profile, exp_name: str, seed: int):
     path = run_dir(p, exp_name, seed) / "bank.pt"
     if not path.exists():
         raise SystemExit(f"{path} missing: train {exp_name}/s{seed} first")
-    base = load_base(p, bc.base, bc.base_seed, bc.base_ckpt)
+    base = load_base(p, bc.base, bank_base_seed(bc, seed), bc.base_ckpt)
     bm = BankModel(p, bc)
     bm.load_state_dict(load_torch(path)["state"])
     bm.to(device()).eval()

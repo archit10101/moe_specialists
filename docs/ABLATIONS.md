@@ -13,7 +13,7 @@ pulled in automatically. Results land in the same `REPORT.md`.
 | **B5** | Granularity: are 16 specialists the sweet spot? (doc §29–30: K=5 lost to G) | `abl.bank_{sem,shuf,tok}_k{4,8,32}`, total width fixed at 4,096 units | sem − tok as a function of K |
 | **B6** | Is the gain routing or just extra capacity? | `abl.bank_dense_compute` (one 256-unit MLP, same compute per token), `abl.bank_dense_params` (one 4,096-unit MLP, same parameters) | the semantic bank must beat the compute-matched dense residual; beating the parameter-matched one would be strong evidence |
 | **B7** | Does cluster quality matter? | `abl.bank_minilm`, `abl.bank_tfidf`, `abl.bank_domain` (5 true domains) | improvement vs the e5 bank; the domain oracle bounds what coarse labels give |
-| **B8** | Does it depend on the particular base? | `abl.bank_{sem,shuf,tok}_base{1,2,3}` | sem > shuf and sem > tok on every base seed |
+| **B8** | Does it depend on the particular base? | removed: core bank seed *s* now sits on TOKEN-4 seed *s* (as in the original), so the core banks already span 4 bases | sem > shuf and sem > tok on every base seed |
 | **B9** | **The doc's top open question (§32.3 #1):** does the router result replicate across *independently trained specialist banks*? | `abl.router_{sem,shuf}_bank{1,2,3}` | router − G < 0 on every bank seed |
 | **B10** | Which router design choices matter? | `abl.router_token_only`, `_ctx_only`, `_mlp`, `_ctx4`, `_ctx64`, `_sem0`, `_sem1`, `_ce_only` | router − G per variant; position breakdown shows whether context helps at starts and transitions |
 

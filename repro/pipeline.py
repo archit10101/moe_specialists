@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .config import EXPERIMENTS, Profile, bank_cfg, get_experiment, router_cfg, runnable
+from .config import EXPERIMENTS, Profile, bank_base_seed, bank_cfg, get_experiment, router_cfg, runnable
 from .utils import data_dir, groups_dir, is_done, run_dir
 
 # per-job SLURM time limits (HH:MM:SS); the bench numbers in docs/ORCD.md explain them
@@ -81,7 +81,7 @@ def build_graph(p: Profile, tier: str = "core", only: list[str] | None = None) -
             deps = ["cluster"]
         elif exp.kind == "bank":
             bc = bank_cfg(p, exp)
-            deps = ["cluster", need(bc.base, bc.base_seed)]
+            deps = ["cluster", need(bc.base, bank_base_seed(bc, seed))]
         else:
             rc = router_cfg(p, exp)
             deps = [need(rc.bank, rc.bank_seed), need("bank.tok", rc.bank_seed)]

@@ -35,8 +35,8 @@ class DataCfg:
     source: str = "m2d2_arxiv"          # m2d2_arxiv | jsonl | synthetic
     domains: tuple = ("cs", "math", "physics", "q-bio", "stat")   # 5 arXiv L1 domains (doc §11)
     tokenizer: str = "gpt2"             # gpt2 (tiktoken) | bytes
-    doc_tokens: int = 2048              # M2D2 has no paper boundaries: a "paper" = run of consecutive
-                                        # paragraphs of about this many tokens (docs/RECONSTRUCTION.md)
+    doc_tokens: int = 2048              # synthetic source only: length of a generated paper. M2D2 papers
+                                        # are its blank-line-separated blocks (docs/RECONSTRUCTION.md)
     # tokens PER DOMAIN in each paper-disjoint split, filled in this order (contiguous ranges)
     split_tokens: tuple = (("test", 1_000_000), ("val", 1_000_000), ("calib", 1_000_000),
                            ("bank", 10_000_000), ("base", 49_200_000))
@@ -45,15 +45,23 @@ class DataCfg:
 
 @dataclass(frozen=True)
 class ModelCfg:
-    vocab_size: int = 50304             # GPT-2 50257 padded to a multiple of 64
+    """Defaults follow the original code (lfr_model.py): 103,609,728 parameters exactly."""
+    vocab_size: int = 50304             # GPT-2 50257 padded to a multiple of 64 (original: Pythia, also 50304)
     ctx: int = 1024
     n_layer: int = 12
     n_head: int = 6
     d: int = 384
     n_exp: int = 32
     top_k: int = 4
-    expert_hidden: int = 128            # SwiGLU experts; with the shared path -> ~104.8M params
-    shared_hidden: int = 1536           # (doc: 103.6M; exact split unknown)
+    dense_layers: int = 1               # first N blocks have a dense FFN instead of MoE (original: layer 0)
+    dense_hidden: int = 1792
+    expert_act: str = "gelu"            # gelu: 2-matrix tanh-GELU MLP (original) | swiglu
+    expert_hidden: int = 256
+    shared_hidden: int = 768
+    norm: str = "rms"                   # rms (learnable, eps 1e-6; original) | layer
+    pos: str = "rope"                   # rope (base 1e4; original) | learned
+    router_norm: bool = False           # extra RMSNorm in front of the router (original: router reads norm2 output)
+    renorm_gates: bool = False          # False: gate = raw softmax p of the top-k experts (original, "FLAME")
 
 
 @dataclass(frozen=True)
@@ -61,13 +69,16 @@ class TrainCfg:
     tokens: int = 245_032_457           # doc §2.2
     batch_tokens: int = 65_536          # 64 x 1024 per optimizer step
     micro_bs: int = 16                  # windows per micro-batch (grad accumulation fills the step)
-    lr: float = 1e-3
-    min_lr: float = 1e-4
-    warmup_frac: float = 0.02
+    lr: float = 6e-4                    # original: 6e-4 WSD to 6e-5, 1% warmup (fsp_lib.py, P1_*.json)
+    min_lr: float = 6e-5
+    warmup_frac: float = 0.01
     weight_decay: float = 0.1
     clip: float = 1.0
     switch_coef: float = 0.01           # doc §19 loss: L_LM + 0.01 L_Switch + 0.001 L_z
     z_coef: float = 0.001
+    aux_reduce: str = "sum"             # Switch and z over MoE layers: sum (original) | mean
+    schedule: str = "wsd"               # wsd: warmup, constant, linear decay over the last decay_frac (original) | cosine
+    decay_frac: float = 0.2
     save_fracs: tuple = ()              # extra weight snapshots, e.g. (0.1, 0.25, 0.5)
     log_every: int = 25
 
@@ -84,10 +95,11 @@ class EDLCfg:
 
 @dataclass(frozen=True)
 class BankCfg:
-    """Residual specialist bank on a frozen base (doc §23). The number of specialists is the number of
-    clusters in ``groups`` (token / dense routing use ``groups`` only to define that count)."""
+    """Residual specialist bank on a frozen base (doc §23; original orv1_*.py / orv1_paths.py). The number of
+    specialists is the number of clusters in ``groups`` (token / dense routing use ``groups`` only to define
+    that count)."""
     base: str = "base.token4"           # experiment providing the frozen base
-    base_seed: int = 0
+    base_seed: int = -1                 # -1: the bank's own run seed (original: seed s sits on TOKEN-4 seed s)
     base_ckpt: str = "final"            # final | frac0.1 | frac0.25 | frac0.5
     routing: str = "oracle"             # oracle (group table) | token (learned top-1) | dense (always on)
     groups: str = "sem"                 # oracle group table (hard assignment per paper)
@@ -96,43 +108,68 @@ class BankCfg:
     spec_hidden: int = 256              # 384 -> 256 -> 384; 16 specialists = 3,145,728 params (doc §23)
     total_hidden: int = 4096            # 16 x 256
     tokens: int = 50_000_000
-    lr: float = 1e-3
+    batch_tokens: int = 32_768          # original: 32 x 1024 rows per step (~1,581 steps for 50M tokens)
+    lr: float = 3e-4                    # original pilot over {3e-4, 1e-3, 3e-3} picked 3e-4
+    warmup_steps: int = 50              # then constant (original)
+    weight_decay: float = 0.1
+    init_std: float = 0.02              # first matrix; the second starts at zero (bank == base at step 0)
+    stream_seed: int = 1000             # data order: identical for every seed and condition (original)
     balance_coef: float = 0.01          # token router only
+
+
+def bank_base_seed(bc: "BankCfg", seed: int) -> int:
+    return seed if bc.base_seed < 0 else bc.base_seed
 
 
 @dataclass(frozen=True)
 class RouterCfg:
-    """Causal current-context router over a frozen bank (doc §27)."""
+    """Causal current-context router over a frozen bank (doc §27; original ccsr1_router.py / ccsr1_router_job.py).
+    Teacher pi = softmax(u / (util_temp * s_u) + sem_weight * log(prior + 1e-4)), u = per-token utility of each
+    specialist, s_u = median over training tokens of the per-token SD of u across specialists (fixed once).
+    Loss = sum_t w_t KL(pi_t || p_t) / sum_t w_t  +  w_bal * sum_k pbar_k log(K pbar_k)  [+ w_ce * E_p[CE]],
+    w_t = clip(margin_t / median margin, 0.25, 4), margin = max_k u - mean_k u."""
     bank: str = "bank.sem"
     bank_seed: int = 0
     prior_groups: str = "sem"           # semantic prior used by the training-only teacher
+    split: str = "calib"                # router training papers: unseen by the base, the bank and val (original)
     inputs: str = "both"                # both | token | context
     ctx_window: int = 16
     arch: str = "gru"                   # gru | mlp
     hidden: int = 64                    # Linear(768->64) -> GRU(64) -> 16 logits = 75,152 params
-    util_temp: float = 2.0              # teacher utility temperature, in units of utility std (2*s_u)
+    util_temp: float = 2.0              # tau = util_temp * s_u
     sem_weight: float = 0.5             # teacher exponent on the semantic prior
-    w_teacher: float = 1.0              # KL(teacher || router)
-    w_ce: float = 0.01                  # expected-CE term (doc's "distillation weight 0.01"; RECONSTRUCTION.md)
-    tokens: int = 50_000_000
+    w_teacher: float = 1.0              # weighted KL(teacher || router)
+    w_bal: float = 0.01                 # the doc's "distillation weight 0.01" (original: corpus-level balance)
+    w_ce: float = 0.0                   # expected-CE term (not in the original; B10 abl.router_ce_only)
+    token_weights: bool = True
+    scale_batches: int = 32             # micro-batches used once to fix s_u and the median margin
+    tokens: int = 157_286_400           # original: 2,400 steps x ~64k tokens (~25 passes over its 6.1M)
     lr: float = 3e-3
+    betas: tuple = (0.9, 0.99)
+    weight_decay: float = 0.01
+    warmup_steps: int = 30
 
 
 @dataclass(frozen=True)
 class ClusterCfg:
-    """Label-free paper clusters. Tables built: sem, sem_sharp, sem_shuf, sem_sharp_shuf (main embedder,
-    main_k), sem_k{K} / sem_k{K}_shuf for alt_ks, one table per extra embedder (main_k), and
-    domain / domain_shuf from the data labels."""
-    embedder: str = "e5"                # e5 | minilm | tfidf
+    """Label-free paper clusters (original: gc_lib.py / gc_discover.py). Each paper is embedded as up to
+    ``max_views`` views of ``view_tokens`` tokens spread over the whole paper; embeddings are z-scored on the
+    fit set; q = softmax(mean over views of cos(view, centroid) / assign_temp), NOT balanced at assignment;
+    hard = argmax q; the "sharpened" C6 labels are q**sharp_power renormalised.
+    Tables built: sem, sem_sharp, sem_shuf, sem_sharp_shuf (main embedder, main_k), sem_k{K} / sem_k{K}_shuf
+    for alt_ks, one table per extra embedder (main_k), and domain / domain_shuf from the data labels."""
+    embedder: str = "bge"               # bge (bge-small-en-v1.5, CLS; original) | e5 | minilm | tfidf
     main_k: int = 16
     alt_ks: tuple = (4, 8, 32)          # ablation B5
     extra_embedders: tuple = ("minilm", "tfidf")   # ablation B7
-    fit_docs: int = 60_000              # documents used to fit centroids
-    soft_temp: float = 0.05             # soft posterior = softmax(cos / temp)
-    sharp_temp: float = 0.02            # "sharpened" soft labels used by Semantic C6
-    sinkhorn_iters: int = 50
+    fit_docs: int = 60_000              # papers used to fit centroids
+    view_tokens: int = 256
+    max_views: int = 4
+    assign_temp: float = 0.1            # original ProtoNet temperature
+    sharp_power: float = 2.0            # C6: q**2 renormalised (original sem_tables: q**(1/0.5))
+    sinkhorn_iters: int = 50            # balanced assignments while FITTING the centroids only
     kmeans_iters: int = 30
-    embed_tokens: int = 512             # first N tokens of a paper are embedded
+    shuffle_bins: int = 20              # shuffled tables permute papers within paper-length quantile bins
 
     def tables(self) -> list[str]:
         t = ["domain", "domain_shuf", "sem", "sem_sharp", "sem_shuf", "sem_sharp_shuf"]
@@ -171,13 +208,13 @@ SMOKE = Profile(
     DataCfg(source="synthetic", tokenizer="bytes", doc_tokens=600,
             split_tokens=(("test", 30_000), ("val", 30_000), ("calib", 30_000),
                           ("bank", 120_000), ("base", 400_000))),
-    ModelCfg(vocab_size=320, ctx=128, n_layer=2, n_head=2, d=64, n_exp=8, top_k=2,
-             expert_hidden=32, shared_hidden=128),
+    ModelCfg(vocab_size=320, ctx=128, n_layer=3, n_head=2, d=64, n_exp=8, top_k=2,
+             dense_hidden=128, expert_hidden=32, shared_hidden=64),
     TrainCfg(tokens=600_000, batch_tokens=4096, micro_bs=16, lr=3e-3, min_lr=3e-4, log_every=10),
     BankCfg(spec_hidden=32, total_hidden=128, tokens=200_000, lr=3e-3),
-    RouterCfg(hidden=16, tokens=150_000, lr=5e-3),
+    RouterCfg(hidden=16, tokens=150_000, lr=5e-3, scale_batches=4),
     ClusterCfg(embedder="tfidf", main_k=4, alt_ks=(8,), extra_embedders=("tfidf",), fit_docs=5_000,
-               embed_tokens=400),
+               view_tokens=64, shuffle_bins=4),
     EvalCfg(val_tokens=60_000, batch=16, probe_windows_per_group=6, min_routed=20),
 )
 
@@ -227,10 +264,12 @@ EXPERIMENTS: list[Experiment] = [
                save_fracs=(0.1, 0.25, 0.5)),
     Experiment("base.edl", "base", SEEDS4, "core", "§3/§18 explicit-label EDL",
                edl=EDLCfg(groups="domain", beta=5e-3)),
+    # C6 = all layers, sharpened soft labels, beta fixed at 5e-3 (original P1_C6/P1_SHUF configs; the doc's
+    # "2% strength" only describes the resulting gradient ratio)
     Experiment("base.sem_c6", "base", SEEDS4, "core", "§18 Semantic C6 (label-free clusters)",
-               edl=EDLCfg(groups="sem_sharp", target_ratio=0.02)),
+               edl=EDLCfg(groups="sem_sharp", beta=5e-3)),
     Experiment("base.shuf_c6", "base", SEEDS4, "core", "§18 shuffled C6 (persistent random grouping)",
-               edl=EDLCfg(groups="sem_sharp_shuf", target_ratio=0.02)),
+               edl=EDLCfg(groups="sem_sharp_shuf", beta=5e-3)),
     # ablations
     Experiment("abl.edl_beta1e-3", "base", (0, 1), "ablation", "B1 EDL strength (weaker)",
                edl=EDLCfg(groups="domain", beta=1e-3)),
@@ -268,10 +307,7 @@ EXPERIMENTS: list[Experiment] = [
     Experiment("abl.bank_tfidf", "bank", (0, 1), "ablation", "B7 tf-idf clusters", bank=dict(groups="tfidf")),
     Experiment("abl.bank_domain", "bank", (0, 1), "ablation", "B7 explicit 5-domain oracle",
                bank=dict(groups="domain", width="split")),
-    # B8: other base seeds
-    *[Experiment(f"abl.bank_{r}_base{b}", "bank", (0,), "ablation", f"B8 {r} bank on token4 seed {b}",
-                 bank=_bank(r, base_seed=b))
-      for b in (1, 2, 3) for r in ("sem", "shuf", "tok")],
+    # (B8 "other base seeds" is gone: core bank seed s now sits on TOKEN-4 seed s, as in the original)
 
     # ---------------- Stage 3: causal current-context router (doc §27) ---------------------------
     Experiment("router.sem", "router", (0, 1, 2), "core", "§27 GRU router over the frozen semantic bank"),

@@ -12,15 +12,18 @@ from __future__ import annotations
 import torch
 
 
-def switch_loss(model) -> torch.Tensor:
-    return torch.stack([m.aux for m in model.moe_layers()]).mean()
+def switch_loss(model, reduce: str = "sum") -> torch.Tensor:
+    """Switch balance loss over MoE layers; the original sums it (lfr_model.py `aux = aux + ...`)."""
+    t = torch.stack([m.aux for m in model.moe_layers()])
+    return t.sum() if reduce == "sum" else t.mean()
 
 
-def z_loss(model) -> torch.Tensor:
-    return torch.stack([m.z for m in model.moe_layers()]).mean()
+def z_loss(model, reduce: str = "sum") -> torch.Tensor:
+    t = torch.stack([m.z for m in model.moe_layers()])
+    return t.sum() if reduce == "sum" else t.mean()
 
 
-def edl_layer_loss(probs: torch.Tensor, w: torch.Tensor, min_mass: float, eps: float = 1e-6):
+def edl_layer_loss(probs: torch.Tensor, w: torch.Tensor, min_mass: float, eps: float = 1e-8):
     """probs [N, E] (fp32, with grad), w [N, G] group weights. Returns None if < 2 groups present."""
     mass = w.sum(0)                                   # [G]
     keep = mass >= min_mass

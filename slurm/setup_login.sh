@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-time setup on the ORCD LOGIN node (it has internet; compute nodes are treated as offline).
 #   1. conda env + torch (CUDA build) + requirements
-#   2. downloads: 5 M2D2 arXiv archives (~11.7 GB), GPT-2 BPE, e5-base-v2 and MiniLM weights -> ./cache
+#   2. downloads: 5 M2D2 arXiv archives (~11.7 GB), GPT-2 BPE, bge-small-en-v1.5 and MiniLM weights -> ./cache
 #   3. offline check (what compute nodes will see) + CPU tests
 # Safe to re-run. Takes ~20-40 min, mostly the download.
 set -euo pipefail
@@ -33,7 +33,7 @@ export HF_HOME="$REPRO_ROOT/cache/hf" TIKTOKEN_CACHE_DIR="$REPRO_ROOT/cache/tikt
 python -m repro.run prepare --download --profile full
 python - <<'PY'
 from huggingface_hub import snapshot_download
-for m in ("intfloat/e5-base-v2", "sentence-transformers/all-MiniLM-L6-v2"):
+for m in ("BAAI/bge-small-en-v1.5", "sentence-transformers/all-MiniLM-L6-v2"):
     print("==", m, "->", snapshot_download(m, allow_patterns=["*.json", "*.txt", "*.safetensors", "*.model"]))
 PY
 
@@ -43,7 +43,7 @@ from repro.config import FULL
 from repro.data.prepare import download
 download(FULL)
 from transformers import AutoModel, AutoTokenizer
-for m in ("intfloat/e5-base-v2", "sentence-transformers/all-MiniLM-L6-v2"):
+for m in ("BAAI/bge-small-en-v1.5", "sentence-transformers/all-MiniLM-L6-v2"):
     AutoTokenizer.from_pretrained(m); AutoModel.from_pretrained(m)
 print("offline OK")
 PY

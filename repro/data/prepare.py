@@ -12,15 +12,16 @@ Splits (per domain, contiguous ranges of the source order, filled test -> val ->
   base  the 245M-token base-model training set
 
 Sources:
-  m2d2_arxiv  machelreid/m2d2 arXiv level-1 archives (cs_l1, math_l1, ...). M2D2 stores one paragraph per
-              line with no paper boundaries, so a "paper" here is a run of consecutive paragraphs of about
-              DataCfg.doc_tokens tokens (see docs/RECONSTRUCTION.md).
+  m2d2_arxiv  M2D2 arXiv level-1 archives (train.txt + valid.txt). Papers are separated by blank lines
+              (one paragraph per line inside a paper), as in the original pipeline.
   jsonl       any file of {"text": ..., "domain": ...} lines (e.g. a corpus with real paper boundaries)
   synthetic   generated pseudo-text with domains and latent sub-topics (smoke tests; no download)
 """
 from __future__ import annotations
 
+import codecs
 import json
+import re
 import tarfile
 from pathlib import Path
 
@@ -72,27 +73,36 @@ def m2d2_archive(domain: str) -> Path:
 
 
 def m2d2_docs(domain: str, doc_chars: int):
-    """Yield pseudo-papers: runs of consecutive paragraphs (lines) of ~doc_chars characters."""
+    """Yield papers. M2D2 separates papers with blank lines (runs of >= 2 newlines) and keeps one
+    paragraph per line inside a paper; the original pipeline split on exactly that (dfc_data.py
+    `_iter_docs`), over train.txt and then valid.txt. `doc_chars` is unused here (synthetic data only)."""
     path = m2d2_archive(domain)
+    found = False
     with tarfile.open(path, "r|gz") as tar:
         for member in tar:
-            if not member.name.endswith("/train.txt"):
+            if not member.name.endswith(("/train.txt", "/valid.txt")):
                 continue
-            f = tar.extractfile(member)
-            buf, size = [], 0
-            for raw in f:
-                line = raw.decode("utf-8", errors="ignore").strip()
-                if not line:
-                    continue
-                buf.append(line)
-                size += len(line) + 1
-                if size >= doc_chars:
-                    yield "\n".join(buf)
-                    buf, size = [], 0
-            if buf:
-                yield "\n".join(buf)
-            return
-    raise RuntimeError(f"{path} has no train.txt")
+            found = True
+            yield from split_papers(tar.extractfile(member))
+    if not found:
+        raise RuntimeError(f"{path} has no train.txt / valid.txt")
+
+
+def split_papers(fobj, chunk: int = 1 << 24):
+    """Stream a text file and yield its blank-line-separated blocks, stripped, non-empty."""
+    dec = codecs.getincrementaldecoder("utf-8")(errors="ignore")
+    pat = re.compile(r"\n{2,}")
+    carry = ""
+    for b in iter(lambda: fobj.read(chunk), b""):
+        parts = pat.split(carry + dec.decode(b))
+        carry = parts.pop()                       # the last block may continue in the next chunk
+        for part in parts:
+            if part.strip():
+                yield part.strip()
+    tail = (carry + dec.decode(b"", final=True)).strip()
+    for part in pat.split(tail):
+        if part.strip():
+            yield part.strip()
 
 
 def jsonl_docs(path: str, domains: tuple):

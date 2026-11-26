@@ -1,9 +1,10 @@
 """TOKEN-4 MoE language model (doc §2.2, "later LFR / TOKEN-4 backbone").
 
-Pre-norm GPT; every block's FFN is an MoE layer = one shared SwiGLU expert (every token) + ``n_exp``
-routed SwiGLU experts with unrestricted top-k routing and renormalised gates. No noise, no capacity
-limit, no token dropping. Ported from Class-Project/moe-window-routing/model.py (MoELayer) with:
-  * sort-based dispatch (one argsort per layer instead of a where() per expert),
+Pre-norm GPT following the original code (lfr_model.py): RMSNorm, RoPE, block 0 a dense GELU FFN, blocks
+1..11 MoE = one shared GELU expert (every token) + ``n_exp`` routed GELU experts with unrestricted top-k
+routing. Gates are the raw router softmax of the selected experts (no renormalisation, "FLAME"). No noise,
+no capacity limit, no token dropping. 103,609,728 parameters with the default ModelCfg. Additions:
+  * sort-based dispatch (one argsort per layer),
   * ``ban``: experts removed from a layer's candidate set (the next-ranked expert is admitted, k stay
     active) - used by every ablation metric,
   * ``keep_probs``: the full router softmax is kept *with* gradients for the EDL loss,
@@ -42,18 +43,47 @@ class LayerNorm(nn.Module):
         return F.layer_norm(x, self.weight.shape, self.weight, None, 1e-5)
 
 
+def rope_cos_sin(T: int, hd: int, base: float, device):
+    inv = 1.0 / (base ** (torch.arange(0, hd, 2, device=device, dtype=torch.float32) / hd))
+    f = torch.outer(torch.arange(T, device=device, dtype=torch.float32), inv)
+    return f.cos(), f.sin()                                       # [T, hd/2]
+
+
+def apply_rope(x, cos, sin):
+    """x [B, H, T, hd]; rotate-half convention."""
+    x1, x2 = x.float().chunk(2, dim=-1)
+    c, s_ = cos[None, None], sin[None, None]
+    return torch.cat([x1 * c - x2 * s_, x2 * c + x1 * s_], -1).to(x.dtype)
+
+
 class Attention(nn.Module):
     def __init__(self, c: ModelCfg):
         super().__init__()
         self.qkv = nn.Linear(c.d, 3 * c.d, bias=False)
         self.proj = nn.Linear(c.d, c.d, bias=False)
         self.h = c.n_head
+        self.rope = c.pos == "rope"
 
     def forward(self, x):
         B, T, C = x.shape
         q, k, v = self.qkv(x).view(B, T, 3, self.h, C // self.h).permute(2, 0, 3, 1, 4)
+        if self.rope:
+            cos, sin = rope_cos_sin(T, C // self.h, 10000.0, x.device)
+            q, k = apply_rope(q, cos, sin), apply_rope(k, cos, sin)
         y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
         return self.proj(y.transpose(1, 2).reshape(B, T, C))
+
+
+class GELUMLP(nn.Module):
+    """2-matrix tanh-GELU MLP, no bias (the original's experts, shared expert and dense FFN)."""
+
+    def __init__(self, d, hidden):
+        super().__init__()
+        self.w_up = nn.Linear(d, hidden, bias=False)
+        self.w_down = nn.Linear(hidden, d, bias=False)
+
+    def forward(self, x):
+        return self.w_down(F.gelu(self.w_up(x), approximate="tanh"))
 
 
 class SwiGLU(nn.Module):
@@ -70,11 +100,12 @@ class SwiGLU(nn.Module):
 class MoELayer(nn.Module):
     def __init__(self, c: ModelCfg):
         super().__init__()
-        self.n_exp, self.top_k = c.n_exp, c.top_k
-        self.router_norm = RMSNorm(c.d)
+        self.n_exp, self.top_k, self.renorm = c.n_exp, c.top_k, c.renorm_gates
+        self.router_norm = RMSNorm(c.d) if c.router_norm else None
         self.router = nn.Linear(c.d, c.n_exp, bias=False)
-        self.shared = SwiGLU(c.d, c.shared_hidden)
-        self.experts = nn.ModuleList([SwiGLU(c.d, c.expert_hidden) for _ in range(c.n_exp)])
+        mlp = GELUMLP if c.expert_act == "gelu" else SwiGLU
+        self.shared = mlp(c.d, c.shared_hidden)
+        self.experts = nn.ModuleList([mlp(c.d, c.expert_hidden) for _ in range(c.n_exp)])
         # controls
         self.ban: torch.Tensor | None = None     # bool [n_exp]: experts removed from this layer
         self.keep_probs = False
@@ -89,13 +120,14 @@ class MoELayer(nn.Module):
         B, T, C = h.shape
         N, k = B * T, self.top_k
         with torch.autocast(device_type=h.device.type, enabled=False):
-            logits = self.router(self.router_norm(h.float())).reshape(N, self.n_exp)
+            hr = h.float() if self.router_norm is None else self.router_norm(h.float())
+            logits = F.linear(hr, self.router.weight.float()).reshape(N, self.n_exp)
             if self.ban is not None:
                 logits = logits.masked_fill(self.ban.to(logits.device), float("-inf"))
             probs = F.softmax(logits, dim=-1)
             top2 = probs.topk(min(k + 1, self.n_exp), dim=-1)
             top_p, top_i = top2.values[:, :k], top2.indices[:, :k]
-            gates = top_p / top_p.sum(-1, keepdim=True)
+            gates = top_p / top_p.sum(-1, keepdim=True) if self.renorm else top_p
 
         x = h.reshape(N, C)
         flat_e = top_i.reshape(-1)
@@ -124,15 +156,24 @@ class MoELayer(nn.Module):
         return out.view(B, T, C)
 
 
+def make_norm(c: ModelCfg):
+    return RMSNorm(c.d) if c.norm == "rms" else LayerNorm(c.d)
+
+
 class Block(nn.Module):
-    def __init__(self, c: ModelCfg):
+    def __init__(self, c: ModelCfg, is_moe: bool = True):
         super().__init__()
-        self.ln_1, self.attn = LayerNorm(c.d), Attention(c)
-        self.ln_2, self.moe = LayerNorm(c.d), MoELayer(c)
+        self.ln_1, self.attn = make_norm(c), Attention(c)
+        self.ln_2 = make_norm(c)
+        self.is_moe = is_moe
+        if is_moe:
+            self.moe = MoELayer(c)
+        else:
+            self.ffn = GELUMLP(c.d, c.dense_hidden) if c.expert_act == "gelu" else SwiGLU(c.d, c.dense_hidden)
 
     def forward(self, x):
         x = x + self.attn(self.ln_1(x))
-        return x + self.moe(self.ln_2(x))
+        return x + (self.moe(self.ln_2(x)) if self.is_moe else self.ffn(self.ln_2(x)))
 
 
 class MoEGPT(nn.Module):
@@ -140,9 +181,9 @@ class MoEGPT(nn.Module):
         super().__init__()
         self.cfg = c
         self.wte = nn.Embedding(c.vocab_size, c.d)
-        self.wpe = nn.Embedding(c.ctx, c.d)
-        self.blocks = nn.ModuleList([Block(c) for _ in range(c.n_layer)])
-        self.ln_f = LayerNorm(c.d)
+        self.wpe = nn.Embedding(c.ctx, c.d) if c.pos == "learned" else None
+        self.blocks = nn.ModuleList([Block(c, is_moe=i >= c.dense_layers) for i in range(c.n_layer)])
+        self.ln_f = make_norm(c)
         self.lm_head = nn.Linear(c.d, c.vocab_size, bias=False)
         self.wte.weight = self.lm_head.weight        # tied
         self.apply(self._init)
@@ -159,7 +200,9 @@ class MoEGPT(nn.Module):
     # -- forward pieces
     def trunk(self, idx):
         """Hidden state after the final block, before ln_f: [B, T, d]."""
-        x = self.wte(idx) + self.wpe(torch.arange(idx.shape[1], device=idx.device))
+        x = self.wte(idx)
+        if self.wpe is not None:
+            x = x + self.wpe(torch.arange(idx.shape[1], device=idx.device))
         for b in self.blocks:
             x = b(x)
         return x
@@ -172,7 +215,7 @@ class MoEGPT(nn.Module):
 
     # -- MoE helpers
     def moe_layers(self) -> list[MoELayer]:
-        return [b.moe for b in self.blocks]
+        return [b.moe for b in self.blocks if b.is_moe]
 
     def set_ban(self, bans: dict | None) -> None:
         """bans: {layer: iterable of expert ids}; None clears every ban."""

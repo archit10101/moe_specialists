@@ -19,18 +19,28 @@ from ..utils import StopFlag, load_torch, log, save_torch
 EXIT_TIME, EXIT_SIGNAL = 3, 143
 
 
-def make_optimizer(params, lr: float, weight_decay: float, dev) -> torch.optim.AdamW:
+def make_optimizer(params, lr: float, weight_decay: float, dev, betas=(0.9, 0.95)) -> torch.optim.AdamW:
     params = [p for p in params if p.requires_grad]
     decay = [p for p in params if p.ndim >= 2]
     other = [p for p in params if p.ndim < 2]
     groups = [dict(params=decay, weight_decay=weight_decay), dict(params=other, weight_decay=0.0)]
-    return torch.optim.AdamW(groups, lr=lr, betas=(0.9, 0.95), fused=dev.type == "cuda")
+    return torch.optim.AdamW(groups, lr=lr, betas=tuple(betas), fused=dev.type == "cuda")
 
 
-def lr_at(step: int, total: int, lr: float, min_lr: float, warmup_frac: float) -> float:
-    warm = max(1, int(warmup_frac * total))
+def lr_at(step: int, total: int, lr: float, min_lr: float, warmup_frac: float, schedule: str = "cosine",
+          decay_frac: float = 0.2, warmup_steps: int | None = None) -> float:
+    """Linear warmup, then cosine to min_lr | wsd (constant, linear decay to min_lr over the last
+    decay_frac of steps; the original base schedule) | constant (the original bank schedule)."""
+    warm = max(1, warmup_steps if warmup_steps is not None else int(warmup_frac * total))
     if step < warm:
         return lr * (step + 1) / warm
+    if schedule == "constant":
+        return lr
+    if schedule == "wsd":
+        start = int(total * (1 - decay_frac))
+        if step < start:
+            return lr
+        return lr + (min_lr - lr) * min(1.0, (step - start + 1) / max(1, total - start))
     t = (step - warm) / max(1, total - warm)
     return min_lr + 0.5 * (lr - min_lr) * (1 + math.cos(math.pi * min(1.0, t)))
 

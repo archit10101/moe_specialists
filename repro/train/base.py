@@ -90,14 +90,14 @@ def train_base(p: Profile, exp: Experiment, seed: int) -> None:
         if table is not None and step % probe_every == 0:
             g_lm, g_edl = lm_and_edl_norms(model, to_device(stream.micro_batch(step, 0), dev), table, ecfg, dev)
             extra["ratio_log"].append(dict(step=step, ratio=beta * g_edl / max(g_lm, 1e-12)))
-        set_lr(opt, lr_at(step, total, tc.lr, tc.min_lr, tc.warmup_frac))
+        set_lr(opt, lr_at(step, total, tc.lr, tc.min_lr, tc.warmup_frac, tc.schedule, tc.decay_frac))
         sums = dict(ce=0.0, edl=0.0, switch=0.0, z=0.0)
         for micro in range(accum):
             b = to_device(stream.micro_batch(step, micro), dev)
             with autocast(dev):
                 logits = model(b["x"])
             ce = token_ce(logits, b["y"]).mean()
-            sw, zl = switch_loss(model), z_loss(model)
+            sw, zl = switch_loss(model, tc.aux_reduce), z_loss(model, tc.aux_reduce)
             loss = ce + tc.switch_coef * sw + tc.z_coef * zl
             if table is not None:
                 le = edl_loss(model, table.weights_of(b["doc"]), ecfg.layers, ecfg.min_mass)
