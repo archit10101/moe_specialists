@@ -102,7 +102,9 @@ ACTIVE="$( { [ "$DRY" = 1 ] || squeue -h -u "${USER:-$(id -un)}" -o '%j|%i'; } 2
 IDS=""                                    # "key id" lines (bash 3.2 has no associative arrays)
 get_id() { echo "$IDS" | awk -v k="$1" '$1 == k { print $2; exit }'; }
 n_new=0; n_done=0; n_active=0; LIMIT=0
-while IFS=$'\t' read -r key res time state deps args; do
+# Split on '|', not on tabs: bash merges consecutive tabs (IFS whitespace), which shifted every field
+# of a job with no dependencies (prepare) and submitted it without its command.
+while IFS='|' read -r key res time state deps args; do
   [ -n "$key" ] || continue
   name="${JOB_PREFIX}$(echo "$key" | tr ':' '_')"
   if [ "$state" = done ]; then n_done=$((n_done + 1)); continue; fi
@@ -124,7 +126,7 @@ $key $a"; n_active=$((n_active + 1)); printf '  %-44s already queued (%s)\n' "$k
   IDS="$IDS
 $key $jid"; n_new=$((n_new + 1))
   printf '  %-44s submitted %s%s\n' "$key" "$jid" "${dep:+ (after ${dep#*:})}"
-done <<< "$PLAN"
+done <<< "$(echo "$PLAN" | tr '\t' '|')"
 echo "profile=$REPRO_PROFILE tier=$TIER: $n_new submitted, $n_active already queued, $n_done done."
 if [ "$LIMIT" = 1 ]; then
   n_all="$(echo "$PLAN" | grep -c . || true)"
