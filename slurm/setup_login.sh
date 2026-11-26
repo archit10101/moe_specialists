@@ -47,7 +47,21 @@ for m in ("BAAI/bge-small-en-v1.5", "sentence-transformers/all-MiniLM-L6-v2"):
     AutoTokenizer.from_pretrained(m); AutoModel.from_pretrained(m)
 print("offline OK")
 PY
-python -m pytest -q
+# CPU tests. Login nodes allow each user only a few cores, while PyTorch starts one thread per core of the
+# machine; the oversubscription can stretch a seconds-long test to hours. So cap the threads, cap the time,
+# and allow skipping (REPRO_SETUP_TESTS=0): the GPU smoke test runs the same code end to end anyway.
+if [ "${REPRO_SETUP_TESTS:-1}" = 1 ]; then
+  echo "== CPU tests (OMP_NUM_THREADS=2, at most ${REPRO_SETUP_TEST_MINUTES:-15} min)"
+  rc=0
+  OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 timeout "$(( ${REPRO_SETUP_TEST_MINUTES:-15} * 60 ))" python -m pytest -q || rc=$?
+  if [ "$rc" = 124 ]; then
+    echo "WARNING: the CPU tests did not finish in time on this login node; continuing (the smoke test checks the code)."
+  elif [ "$rc" != 0 ]; then
+    echo "ERROR: CPU tests failed (exit $rc)"; exit "$rc"
+  fi
+else
+  echo "== CPU tests skipped (REPRO_SETUP_TESTS=0)"
+fi
 du -sh cache 2>/dev/null || true
 echo
 echo "setup complete. Next:"
