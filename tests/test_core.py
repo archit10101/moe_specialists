@@ -6,7 +6,7 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from repro.clusters.build import fit_centroids, sinkhorn
+from repro.clusters.build import fit_centroids, sinkhorn, within_split_permutation
 from repro.config import EXPERIMENTS, FULL, SMOKE, ModelCfg, runnable
 from repro.eval.metrics import matched_difference, quantile_bins, swap_specificity
 from repro.model.losses import edl_layer_loss
@@ -110,6 +110,21 @@ def test_kmeans_recovers_planted_clusters():
     lab = (torch.from_numpy(X.astype(np.float32)) @ C.T).argmax(1).numpy()
     from repro.eval.metrics import nmi
     assert nmi(lab, np.repeat(np.arange(4), 300), 4, 4) > 0.95
+
+
+def test_shuffled_tables_are_mass_matched_inside_every_split():
+    """A shuffled control must have its semantic twin's cluster sizes in each split (bank: training,
+    val: scoring), not only summed over all splits."""
+    rng = np.random.default_rng(1)
+    split = np.repeat(np.arange(5), [50, 50, 50, 400, 1500])
+    hard = np.where(split == 3, rng.integers(0, 2, len(split)), rng.integers(0, 16, len(split)))  # skewed per split
+    perm = within_split_permutation(split)
+    assert sorted(perm) == list(range(len(split)))                    # a permutation
+    assert (split[perm] == split).all()                                # never crosses splits
+    for s in range(5):
+        m = split == s
+        assert (np.bincount(hard[perm][m], minlength=16) == np.bincount(hard[m], minlength=16)).all()
+    assert (hard[perm] != hard).mean() > 0.4                           # and actually shuffles
 
 
 # ------------------------------------------------------------------ specialisation metrics

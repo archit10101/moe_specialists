@@ -38,7 +38,7 @@ Legend: **exact** = taken from the doc · **chosen** = our decision (reason give
 | Semantic C6 | all layers, **sharpened** soft per-paper cluster posteriors, "2% strength" | exact wording. We read "2% EDL-relative strength" as β auto-calibrated at step 0 so that ‖∇EDL‖ = 2% of ‖∇LM‖ (the doc reports explicit EDL at ~5% early / ~2% late). The measured ratio is logged in `train_log.json → grad_ratio` |
 | clusters | e5-base-v2 on the first 512 tokens of each paper ("passage: " prefix), spherical k-means with Sinkhorn-balanced assignments, K=16 | e5 + balanced Sinkhorn exact (§14); K=16 chosen (FL-EDL and the oracle bank use 16) |
 | soft / sharp | Sinkhorn posteriors at temperature 0.05 (soft) / 0.02 (sharp) on cosine similarity | chosen |
-| shuffled | rows of the cluster table permuted across papers: same cluster sizes, random membership | exact ("persistent, mass-matched random paper groupings") |
+| shuffled | rows of the cluster table permuted across papers **within each split**: the same number of papers per cluster as the semantic table in every split (bank, val, ...), random membership. A single global permutation only matched the sizes summed over all splits, leaving each bank specialist with a few % more or less training data than its semantic twin | exact ("persistent, mass-matched random paper groupings"); within-split chosen |
 
 ## Metrics (§2.3–2.4)
 

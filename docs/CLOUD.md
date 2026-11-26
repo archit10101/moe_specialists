@@ -38,12 +38,13 @@ gh repo create moe-repro --private --source . --push      # or create it on gith
      *Allowed domains*:
      ```
      download.pytorch.org
+     download-r2.pytorch.org
      huggingface.co
      *.huggingface.co
      *.hf.co
      openaipublic.blob.core.windows.net
      ```
-     The first is needed for the CPU torch build. The others are only needed if you want the
+     The first two are needed for the CPU torch build (the first redirects to the second). The others are only needed if you want the
      session to test the real-data path (M2D2, e5, GPT-2 BPE).
    - **Setup script:** paste the contents of [`scripts/cloud_setup.sh`](../scripts/cloud_setup.sh). It
      installs CPU torch and the requirements, and is cached for later sessions.

@@ -5,8 +5,10 @@
 2. Fit spherical k-means with balanced (Sinkhorn) assignments on a sample of base-split papers.
 3. Assign every paper with Sinkhorn over all papers: ``soft`` (temp soft_temp), ``sharp`` (sharp_temp),
    ``hard`` = argmax of sharp. Cluster sizes are therefore balanced.
-4. Shuffled controls permute whole rows across papers, so every shuffled cluster has exactly the mass of
-   its semantic twin but random content ("persistent, mass-matched random paper groupings", doc §2.5).
+4. Shuffled controls permute whole rows across papers *within each split*, so in every split (the bank
+   split the specialists train on, the val split they are scored on) each shuffled cluster has exactly
+   as many papers as its semantic twin but random content ("persistent, mass-matched random paper
+   groupings", doc §2.5).
 
 Writes ``$WORK/groups/<table>.npz`` (hard, soft?, k) and ``$WORK/groups/summary.json``.
 """
@@ -136,6 +138,18 @@ def save_table(p: Profile, name: str, hard, k, soft=None) -> None:
     np.savez(d / f"{name}.npz", **kw)
 
 
+def within_split_permutation(split: np.ndarray, seed: int = SHUFFLE_SEED) -> np.ndarray:
+    """Permutation of paper ids that only swaps papers inside the same split, so a shuffled table has
+    exactly its semantic twin's cluster sizes in every split (the bank split the specialists train on,
+    the val split they are scored on), not just in total."""
+    rng = np.random.default_rng(seed)
+    perm = np.arange(len(split))
+    for s in np.unique(split):
+        ix = np.flatnonzero(split == s)
+        perm[ix] = ix[rng.permutation(len(ix))]
+    return perm
+
+
 def build(p: Profile) -> None:
     out = groups_dir(p)
     if is_done(out, "cluster"):
@@ -144,7 +158,8 @@ def build(p: Profile) -> None:
     meta, docs = load_meta(p), load_docs(p)
     n = meta["n_docs"]
     base_mask = docs["split"] == meta["split_order"].index("base")
-    perm = np.random.default_rng(SHUFFLE_SEED).permutation(n)
+    perm = within_split_permutation(docs["split"])
+    assert len(perm) == n
     summary = {}
 
     dom = docs["domain"].astype(np.int64)
