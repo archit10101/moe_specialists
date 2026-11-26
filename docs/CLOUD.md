@@ -38,12 +38,15 @@ gh repo create moe-repro --private --source . --push      # or create it on gith
      *Allowed domains*:
      ```
      download.pytorch.org
+     download-r2.pytorch.org
      huggingface.co
      *.huggingface.co
      *.hf.co
      openaipublic.blob.core.windows.net
      ```
-     The first is needed for the CPU torch build. The others are only needed if you want the
+     The first two are needed for the CPU torch build (download.pytorch.org redirects to
+     download-r2.pytorch.org). Without them the setup script falls back to the PyPI wheel, which
+     works but is several GB larger. The others are only needed if you want the
      session to test the real-data path (M2D2, e5, GPT-2 BPE).
    - **Setup script:** paste the contents of [`scripts/cloud_setup.sh`](../scripts/cloud_setup.sh). It
      installs CPU torch and the requirements, and is cached for later sessions.
@@ -57,8 +60,11 @@ gh repo create moe-repro --private --source . --push      # or create it on gith
 **From your terminal:** push first, because the VM clones GitHub rather than your local folder.
 
 ```bash
-claude --cloud "$(sed -n '/^## Prompt 1/,/^---/p' CLOUD_PROMPT.md | sed -n '/^```$/,/^```$/p' | sed '1d;$d')"
+claude --cloud "$(./scripts/cloud_prompt.sh 1)"
 ```
+
+`scripts/cloud_prompt.sh N` prints prompt N from CLOUD_PROMPT.md from any directory, and fails with
+an error rather than sending an empty prompt.
 
 Each `--cloud` call starts an independent parallel session. Follow up with
 `claude -p "message" --cloud <session-id>`.
