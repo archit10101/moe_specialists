@@ -39,6 +39,7 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 [ -n "$GPU_TYPE" ] || die "GPU_TYPE is empty in slurm/config.sh (untyped requests get a slow L40S)"
 LOGS="$REPRO_WORK/logs"; mkdir -p "$LOGS"
 
+[ "$SMOKE" = 1 ] && GPU_TYPE="$SMOKE_GPU_TYPE"
 # GPU request: one type -> -G type:1; a list -> any of them via node features, if the partition has them
 GPU_FLAGS=()
 resolve_gpu() {
@@ -107,6 +108,7 @@ n_new=0; n_done=0; n_active=0; LIMIT=0
 while IFS='|' read -r key res time state deps args; do
   [ -n "$key" ] || continue
   name="${JOB_PREFIX}$(echo "$key" | tr ':' '_')"
+  [ "$SMOKE" = 1 ] && time="$SMOKE_TIME"
   if [ "$state" = done ]; then n_done=$((n_done + 1)); continue; fi
   a="$(echo "$ACTIVE" | awk -F'|' -v n="$name" '$1 == n { print $2; exit }')"
   if [ -n "$a" ]; then IDS="$IDS

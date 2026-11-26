@@ -22,6 +22,10 @@ Otherwise `submit_all.sh` prints a note and requests the first type only (`-G h2
 untyped request, which would land on an L40S. Use `GPU_TYPE=h200` to force one type. Both are Hopper GPUs
 (same bf16 kernels), so mixing them does not change the experiment.
 
+The smoke test (`--smoke`) only checks that every stage runs on tiny data, so it uses `SMOKE_GPU_TYPE=l40s`
+(49 nodes, far less contended) and a `SMOKE_TIME=00:30:00` limit per job. Short limits let SLURM backfill
+the jobs into gaps, so the smoke test can start long before an H200 frees up.
+
 ## Quick start: one command, check back tomorrow
 
 ```bash

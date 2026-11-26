@@ -16,6 +16,10 @@
 #   partition; otherwise submit_all.sh falls back to the FIRST type with -G <type>:1 (never an L40S).
 #   H100 and H200 are both Hopper (same kernels, bf16); the H200 has more memory and bandwidth.
 : "${GPU_TYPE:=h200,h100}"
+# The smoke test (--smoke) only checks that every stage runs on tiny data, so it takes the far less
+# contended L40S nodes and a short time limit: short limits let SLURM backfill the jobs into gaps.
+: "${SMOKE_GPU_TYPE:=l40s}"
+: "${SMOKE_TIME:=00:30:00}"
 : "${SLURM_ACCOUNT:=}"                 # optional -A account
 : "${MAIL_USER:=}"                     # e-mail for FAIL (and END of the report job); empty = none
 : "${JOB_PREFIX:=repro_}"              # prefix used to find this project's jobs in squeue
