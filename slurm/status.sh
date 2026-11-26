@@ -14,7 +14,7 @@ done
 source "$REPRO_ROOT/slurm/env.sh"
 repro_activate
 echo "== queue ($JOB_PREFIX*)"
-squeue -u "$USER" -o '%.10i %.45j %.9T %.10M %.12l %R' 2>/dev/null | awk -v p="$JOB_PREFIX" 'NR==1 || index($2, p) == 1' || true
+squeue -u "${USER:-$(id -un)}" -o '%.10i %.45j %.9T %.10M %.12l %R' 2>/dev/null | awk -v p="$JOB_PREFIX" 'NR==1 || index($2, p) == 1' || true
 echo
 echo "== pipeline (profile $REPRO_PROFILE, tier $TIER)"
 python -m repro.run plan --profile "$REPRO_PROFILE" --tier "$TIER" --format tsv \

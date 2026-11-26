@@ -12,6 +12,7 @@
 #   ./slurm/submit_all.sh --after JOBID ...   every job except `prepare` also waits for JOBID to succeed
 #                                             (launch.sh uses it to hold the real run behind the smoke test)
 #   ./slurm/submit_all.sh --dry-run ...       print the sbatch commands, submit nothing
+# Exit code 10: the per-user submit limit was hit; what fit is queued, re-run later for the rest.
 set -euo pipefail
 REPRO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export REPRO_ROOT
@@ -25,7 +26,7 @@ while [ $# -gt 0 ]; do
     --smoke) SMOKE=1 ;;
     --bench) BENCH=1 ;;
     --dry-run) DRY=1 ;;
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
   shift
@@ -73,7 +74,14 @@ submit() {  # name time resource dependency args...
   local flags=(); while IFS= read -r l; do flags+=( "$l" ); done < <(common_flags "$name" "$time" "$res")
   [ -n "$dep" ] && flags+=( --dependency="$dep" --kill-on-invalid-dep=yes )
   if [ "$DRY" = 1 ]; then echo "sbatch ${flags[*]} slurm/job.sbatch $*" >> "$LOGS/dry_run.txt"; echo "dry-$name"; return; fi
-  local jid; jid="$(sbatch --parsable "${flags[@]}" "$REPRO_ROOT/slurm/job.sbatch" "$@")" || die "sbatch failed for $name"
+  local jid err; err="$(mktemp)"
+  if ! jid="$(sbatch --parsable "${flags[@]}" "$REPRO_ROOT/slurm/job.sbatch" "$@" 2>"$err")"; then
+    cat "$err" >&2
+    # per-user cap on submitted jobs (ORCD: QOSMaxSubmitJobPerUserLimit): not an error, just "later"
+    if grep -qiE 'MaxSubmitJob|submit limit' "$err"; then rm -f "$err"; return 10; fi
+    rm -f "$err"; die "sbatch failed for $name"
+  fi
+  cat "$err" >&2; rm -f "$err"
   jid="${jid%%;*}"
   printf '%s\t%s\t%s\t%s\n' "$(date '+%F %T')" "$jid" "$name" "$dep" >> "$LOGS/jobs.tsv"
   echo "$jid"
@@ -90,10 +98,10 @@ if [ "$DRY" != 1 ] && echo "$PLAN" | grep -q $'^prepare\t.*\ttodo\t'; then
     die "raw data not in the cache (compute nodes are offline): run ./slurm/setup_login.sh first"
   fi
 fi
-ACTIVE="$( { [ "$DRY" = 1 ] || squeue -h -u "$USER" -o '%j|%i'; } 2>/dev/null | grep "^${JOB_PREFIX}" || true)"
+ACTIVE="$( { [ "$DRY" = 1 ] || squeue -h -u "${USER:-$(id -un)}" -o '%j|%i'; } 2>/dev/null | grep "^${JOB_PREFIX}" || true)"
 IDS=""                                    # "key id" lines (bash 3.2 has no associative arrays)
 get_id() { echo "$IDS" | awk -v k="$1" '$1 == k { print $2; exit }'; }
-n_new=0; n_done=0; n_active=0
+n_new=0; n_done=0; n_active=0; LIMIT=0
 while IFS=$'\t' read -r key res time state deps args; do
   [ -n "$key" ] || continue
   name="${JOB_PREFIX}$(echo "$key" | tr ':' '_')"
@@ -110,10 +118,18 @@ $key $a"; n_active=$((n_active + 1)); printf '  %-44s already queued (%s)\n' "$k
   # --after: everything but the CPU-only data preparation also waits for that job to succeed
   if [ -n "$AFTER" ] && [ "$key" != prepare ]; then dep="${dep:+$dep,}afterok:$AFTER"; fi
   # shellcheck disable=SC2086
-  jid="$(submit "$name" "$time" "$res" "$dep" $args)"
+  jid="$(submit "$name" "$time" "$res" "$dep" $args)" && rc=0 || rc=$?
+  if [ "$rc" = 10 ]; then LIMIT=1; break; fi
+  [ "$rc" = 0 ] || exit "$rc"
   IDS="$IDS
 $key $jid"; n_new=$((n_new + 1))
   printf '  %-44s submitted %s%s\n' "$key" "$jid" "${dep:+ (after ${dep#*:})}"
 done <<< "$PLAN"
 echo "profile=$REPRO_PROFILE tier=$TIER: $n_new submitted, $n_active already queued, $n_done done."
+if [ "$LIMIT" = 1 ]; then
+  n_all="$(echo "$PLAN" | grep -c . || true)"
+  echo "SUBMIT LIMIT: SLURM's per-user job cap was reached; $((n_all - n_new - n_active - n_done)) jobs are not submitted yet."
+  echo "Re-run this command when some jobs have finished (it continues where it stopped). launch.sh does this for you."
+  exit 10
+fi
 echo "logs: $LOGS   progress: ./slurm/status.sh${SMOKE:+ }$( [ "$SMOKE" = 1 ] && echo --smoke )"

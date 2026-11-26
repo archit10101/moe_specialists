@@ -38,6 +38,13 @@ It then:
    If the smoke test passes, the real run starts on its own overnight. If it fails, SLURM cancels the real
    jobs. Only the CPU-only `prepare` job (data tokenisation, needed either way) is not gated.
 
+**Submit limit.** ORCD caps how many jobs one user can have submitted at once
+(`QOSMaxSubmitJobPerUserLimit`). The smoke test plus the real run can exceed that cap, and `--tier all`
+certainly does. When `submit_all.sh` hits the cap, it queues what fits, says how many jobs are left and
+exits with code 10. `launch.sh` then waits `RETRY_MINUTES` (default 10) and continues as jobs finish. The
+launcher therefore keeps running on the login node (mostly asleep) until the last job is queued. If you
+use `submit_all.sh` by hand, just re-run it later.
+
 In the morning:
 
 ```bash
