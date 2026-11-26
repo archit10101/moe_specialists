@@ -9,20 +9,23 @@
 #   ./slurm/submit_all.sh --only bank.sem,router.sem
 #   ./slurm/submit_all.sh --smoke             whole pipeline on the tiny synthetic profile (~15 min)
 #   ./slurm/submit_all.sh --bench             one GPU job timing each job type (do this first)
+#   ./slurm/submit_all.sh --after JOBID ...   every job except `prepare` also waits for JOBID to succeed
+#                                             (launch.sh uses it to hold the real run behind the smoke test)
 #   ./slurm/submit_all.sh --dry-run ...       print the sbatch commands, submit nothing
 set -euo pipefail
 REPRO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export REPRO_ROOT
 
-TIER=core; ONLY=""; SMOKE=0; BENCH=0; DRY=0; DRY_N=0
+TIER=core; ONLY=""; SMOKE=0; BENCH=0; DRY=0; DRY_N=0; AFTER=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --tier) shift; TIER="$1" ;;
     --only) shift; ONLY="$1" ;;
+    --after) shift; AFTER="$1" ;;
     --smoke) SMOKE=1 ;;
     --bench) BENCH=1 ;;
     --dry-run) DRY=1 ;;
-    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
   shift
@@ -35,10 +38,29 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 [ -n "$GPU_TYPE" ] || die "GPU_TYPE is empty in slurm/config.sh (untyped requests get a slow L40S)"
 LOGS="$REPRO_WORK/logs"; mkdir -p "$LOGS"
 
+# GPU request: one type -> -G type:1; a list -> any of them via node features, if the partition has them
+GPU_FLAGS=()
+resolve_gpu() {
+  local types=( ${GPU_TYPE//,/ } ) feats="" cons="" t f
+  if [ "${#types[@]}" -gt 1 ]; then
+    feats="$(sinfo -h -p "$GPU_PARTITION" -o '%f' 2>/dev/null | tr ',' '\n' | sort -u || true)"
+    for t in "${types[@]}"; do
+      f="$(echo "$feats" | grep -ix "$t" | head -1 || true)"
+      if [ -z "$f" ]; then cons=""; break; fi
+      cons="${cons:+$cons|}$f"
+    done
+    if [ -n "$cons" ]; then GPU_FLAGS=( --gres=gpu:1 "--constraint=$cons" ); return; fi
+    echo "note: $GPU_PARTITION has no node features named ${GPU_TYPE//,/ / }; requesting ${types[0]} only" >&2
+  fi
+  GPU_FLAGS=( -G "${types[0]}:1" )
+}
+resolve_gpu
+echo "GPU request: ${GPU_FLAGS[*]}" >&2
+
 common_flags() {  # name time resource
   local f=( -J "$1" -t "$2" -o "$LOGS/%x_%j.out" --chdir="$REPRO_ROOT"
             --export="ALL,REPRO_ROOT=$REPRO_ROOT,REPRO_WORK=$REPRO_WORK,REPRO_PROFILE=$REPRO_PROFILE" )
-  if [ "$3" = gpu ]; then f+=( -p "$GPU_PARTITION" -G "${GPU_TYPE}:1" -c "$GPU_CPUS" --mem="$GPU_MEM" --requeue )
+  if [ "$3" = gpu ]; then f+=( -p "$GPU_PARTITION" "${GPU_FLAGS[@]}" -c "$GPU_CPUS" --mem="$GPU_MEM" --requeue )
   else f+=( -p "$CPU_PARTITION" -c "$CPU_CPUS" --mem="$CPU_MEM" ); fi
   [ -n "$SLURM_ACCOUNT" ] && f+=( -A "$SLURM_ACCOUNT" )
   [ -n "$MAIL_USER" ] && f+=( --mail-user="$MAIL_USER" --mail-type=FAIL )
@@ -58,7 +80,7 @@ submit() {  # name time resource dependency args...
 }
 
 if [ "$BENCH" = 1 ]; then
-  jid="$(submit "${JOB_PREFIX}bench" 00:45:00 gpu "" bench)"
+  jid="$(submit "${JOB_PREFIX}bench" 00:45:00 gpu "${AFTER:+afterok:$AFTER}" bench)"
   echo "submitted bench job $jid -> $LOGS/${JOB_PREFIX}bench_${jid}.out"; exit 0
 fi
 
@@ -85,6 +107,8 @@ $key $a"; n_active=$((n_active + 1)); printf '  %-44s already queued (%s)\n' "$k
   if [ -n "$ids" ]; then
     if [ "$key" = report ]; then dep="afterany$ids"; else dep="afterok$ids"; fi
   fi
+  # --after: everything but the CPU-only data preparation also waits for that job to succeed
+  if [ -n "$AFTER" ] && [ "$key" != prepare ]; then dep="${dep:+$dep,}afterok:$AFTER"; fi
   # shellcheck disable=SC2086
   jid="$(submit "$name" "$time" "$res" "$dep" $args)"
   IDS="$IDS

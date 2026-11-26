@@ -51,6 +51,8 @@ python -m repro.run local --profile smoke               # every stage end to end
 
 **ORCD (the real run):** see [docs/ORCD.md](docs/ORCD.md).
 ```bash
+./slurm/launch.sh                    # all of the below in one go: setup, smoke test, then the core run
+                                     # held behind a smoke "gate" job; detaches, check back tomorrow
 ./slurm/setup_login.sh               # once, on the login node
 ./slurm/submit_all.sh --smoke        # whole pipeline on a GPU node, ~15 min
 ./slurm/submit_all.sh --bench        # measured GPU-hours

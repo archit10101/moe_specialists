@@ -7,10 +7,15 @@
 #   compute nodes are treated as offline: setup_login.sh downloads everything into ./cache first.
 #   mit_normal_gpu: 6 h max per job, 2 GPUs per user at a time. ALWAYS request a GPU type -
 #   an untyped request lands on a slow L40S.   mit_normal: CPU only, 12 h max.
+#   GPUs there: 1 H100 node (4 GPUs) vs 8 H200 nodes (8 GPUs each), so H200 is the default.
 
 : "${GPU_PARTITION:=mit_normal_gpu}"
 : "${CPU_PARTITION:=mit_normal}"
-: "${GPU_TYPE:=h100}"                  # h100 or h200
+# One type ("h200") or a comma list ("h200,h100" = take whichever is free first). A list becomes
+#   --gres=gpu:1 --constraint="h200|h100" when sinfo shows those names as node features of the
+#   partition; otherwise submit_all.sh falls back to the FIRST type with -G <type>:1 (never an L40S).
+#   H100 and H200 are both Hopper (same kernels, bf16); the H200 has more memory and bandwidth.
+: "${GPU_TYPE:=h200,h100}"
 : "${SLURM_ACCOUNT:=}"                 # optional -A account
 : "${MAIL_USER:=}"                     # e-mail for FAIL (and END of the report job); empty = none
 : "${JOB_PREFIX:=repro_}"              # prefix used to find this project's jobs in squeue

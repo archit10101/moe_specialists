@@ -13,8 +13,45 @@ git clone <your GitHub repo URL> moe-repro && cd moe-repro
 ```
 
 Optional settings live in `slurm/config.sh` and can be overridden with environment variables:
-`GPU_TYPE` (h100/h200), `SLURM_ACCOUNT`, `MAIL_USER`, `REPRO_WORK` (where data, checkpoints and
-results go).
+`GPU_TYPE`, `SLURM_ACCOUNT`, `MAIL_USER`, `REPRO_WORK` (where data, checkpoints and results go).
+
+**GPU type.** `mit_normal_gpu` has one H100 node (4 GPUs) and eight H200 nodes (8 GPUs each), so the
+default is `GPU_TYPE=h200,h100`: take whichever is free first. That becomes
+`--gres=gpu:1 --constraint="h200|h100"` if `sinfo` lists those names as node features of the partition.
+Otherwise `submit_all.sh` prints a note and requests the first type only (`-G h200:1`). It never sends an
+untyped request, which would land on an L40S. Use `GPU_TYPE=h200` to force one type. Both are Hopper GPUs
+(same bf16 kernels), so mixing them does not change the experiment.
+
+## Quick start: one command, check back tomorrow
+
+```bash
+MAIL_USER=<you>@mit.edu ./slurm/launch.sh        # or: ./slurm/launch.sh --tier all   (adds the ablations)
+```
+
+`launch.sh` detaches itself (log: `$REPRO_WORK/logs/launch_<date>.log`), so you can log out right away.
+It then:
+
+1. runs `setup_login.sh` (step 1 below). If setup fails, nothing is submitted.
+2. submits the smoke pipeline (step 2 below);
+3. submits a small CPU **gate** job after the smoke report. It succeeds only if every smoke job finished;
+4. submits the real pipeline with every job except `prepare` held behind the gate (`--after <gate>`).
+   If the smoke test passes, the real run starts on its own overnight. If it fails, SLURM cancels the real
+   jobs. Only the CPU-only `prepare` job (data tokenisation, needed either way) is not gated.
+
+In the morning:
+
+```bash
+tail -20 work/logs/launch_*.log     # did setup and submission go through?
+./slurm/status.sh --smoke           # smoke result; a failed gate shows up under "recent failures"
+./slurm/status.sh                   # the real run
+```
+
+If the smoke test failed, fix the cause and run `./slurm/launch.sh` again. Setup is idempotent and finished
+jobs are skipped. Delete `work/smoke` first if the fix should redo smoke jobs that had already finished,
+and delete `work/data` if the fix touched data preparation. `launch.sh` skips the benchmark; jobs that run
+past their time budget checkpoint and exit with code 3, and re-running `submit_all.sh` resumes them.
+
+Steps 1-5 below are the same pipeline run by hand, one stage at a time.
 
 ## 1. One-time setup (login node, ~30 min)
 
