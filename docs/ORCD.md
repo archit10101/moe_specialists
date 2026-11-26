@@ -42,6 +42,11 @@ It then:
    If the smoke test passes, the real run starts on its own overnight. If it fails, SLURM cancels the real
    jobs. Only the CPU-only `prepare` job (data tokenisation, needed either way) is not gated.
 
+**Critical path first.** ORCD runs at most 2 GPUs per user at a time, and every bank and router (claims
+2-3, ablations B4-B10) needs only the `token4` base models. So base models that no other job depends on
+(claim 1's EDL family, B1-B3) are submitted with `--nice=$LEAF_BASE_NICE` (default 1000) and run after the
+`token4` base and the cheap bank/router jobs. Set `LEAF_BASE_NICE=0` for equal priority.
+
 **Submit limit.** ORCD caps how many jobs one user can have submitted at once
 (`QOSMaxSubmitJobPerUserLimit`). The smoke test plus the real run can exceed that cap, and `--tier all`
 certainly does. When `submit_all.sh` hits the cap, it queues what fits, says how many jobs are left and

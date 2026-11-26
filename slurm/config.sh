@@ -20,6 +20,10 @@
 # contended L40S nodes and a short time limit: short limits let SLURM backfill the jobs into gaps.
 : "${SMOKE_GPU_TYPE:=l40s}"
 : "${SMOKE_TIME:=00:30:00}"
+# Critical path first: base models that no bank/router job needs (claim 1's EDL family, B1-B3) get this
+# SLURM --nice (lower priority), so with the per-user GPU cap the token4 base and the cheap bank/router
+# jobs that depend on it run first. 0 = everything at equal priority.
+: "${LEAF_BASE_NICE:=1000}"
 : "${SLURM_ACCOUNT:=}"                 # optional -A account
 : "${MAIL_USER:=}"                     # e-mail for FAIL (and END of the report job); empty = none
 : "${JOB_PREFIX:=repro_}"              # prefix used to find this project's jobs in squeue

@@ -74,6 +74,7 @@ submit() {  # name time resource dependency args...
   local name="$1" time="$2" res="$3" dep="$4"; shift 4
   local flags=(); while IFS= read -r l; do flags+=( "$l" ); done < <(common_flags "$name" "$time" "$res")
   [ -n "$dep" ] && flags+=( --dependency="$dep" --kill-on-invalid-dep=yes )
+  [ -n "${JOB_NICE:-}" ] && [ "$JOB_NICE" != 0 ] && flags+=( --nice="$JOB_NICE" )
   if [ "$DRY" = 1 ]; then echo "sbatch ${flags[*]} slurm/job.sbatch $*" >> "$LOGS/dry_run.txt"; echo "dry-$name"; return; fi
   local jid err; err="$(mktemp)"
   if ! jid="$(sbatch --parsable "${flags[@]}" "$REPRO_ROOT/slurm/job.sbatch" "$@" 2>"$err")"; then
@@ -99,6 +100,8 @@ if [ "$DRY" != 1 ] && echo "$PLAN" | grep -q $'^prepare\t.*\ttodo\t'; then
     die "raw data not in the cache (compute nodes are offline): run ./slurm/setup_login.sh first"
   fi
 fi
+# jobs some other job depends on (the report aside): their base models are on the critical path
+NEEDED="$(echo "$PLAN" | awk -F'\t' '$1 != "report" { n = split($5, d, ","); for (i = 1; i <= n; i++) print d[i] }' | sort -u)"
 ACTIVE="$( { [ "$DRY" = 1 ] || squeue -h -u "${USER:-$(id -un)}" -o '%j|%i'; } 2>/dev/null | grep "^${JOB_PREFIX}" || true)"
 IDS=""                                    # "key id" lines (bash 3.2 has no associative arrays)
 get_id() { echo "$IDS" | awk -v k="$1" '$1 == k { print $2; exit }'; }
@@ -121,6 +124,8 @@ $key $a"; n_active=$((n_active + 1)); printf '  %-44s already queued (%s)\n' "$k
   fi
   # --after: everything but the CPU-only data preparation also waits for that job to succeed
   if [ -n "$AFTER" ] && [ "$key" != prepare ]; then dep="${dep:+$dep,}afterok:$AFTER"; fi
+  JOB_NICE=0
+  if [ "${key%%:*}" = base ] && ! echo "$NEEDED" | grep -qxF "$key"; then JOB_NICE="$LEAF_BASE_NICE"; fi
   # shellcheck disable=SC2086
   jid="$(submit "$name" "$time" "$res" "$dep" $args)" && rc=0 || rc=$?
   if [ "$rc" = 10 ]; then LIMIT=1; break; fi
