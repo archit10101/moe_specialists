@@ -1,0 +1,8 @@
+work/
+cache/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.pt
+MOE_RESEARCH_COMPLETE_EXPERIMENT_HISTORY (1).md
