@@ -242,6 +242,8 @@ class Experiment:
     save_fracs: tuple = ()              # base only
     bank: dict = field(default_factory=dict)     # BankCfg overrides (bank only)
     router: dict = field(default_factory=dict)   # RouterCfg overrides (router only)
+    priority: int = 1                   # scheduling order on a shared cluster: 0 first ... 3 last; within a
+                                        # level lower seeds run first (slurm/submit_all.sh turns it into --nice)
 
 
 SEEDS4 = (0, 1, 2, 3)
@@ -261,7 +263,7 @@ def _bank(r: str, **kw) -> dict:
 EXPERIMENTS: list[Experiment] = [
     # ---------------- Stage 1: base models (doc §18 Phase 1) -------------------------------------
     Experiment("base.token4", "base", SEEDS4, "core", "§18 TOKEN-4 baseline",
-               save_fracs=(0.1, 0.25, 0.5)),
+               save_fracs=(0.1, 0.25, 0.5), priority=0),
     Experiment("base.edl", "base", SEEDS4, "core", "§3/§18 explicit-label EDL",
                edl=EDLCfg(groups="domain", beta=5e-3)),
     # C6 = all layers, sharpened soft labels, beta fixed at 5e-3 (original P1_C6/P1_SHUF configs; the doc's
@@ -272,67 +274,71 @@ EXPERIMENTS: list[Experiment] = [
                edl=EDLCfg(groups="sem_sharp_shuf", beta=5e-3)),
     # ablations
     Experiment("abl.edl_beta1e-3", "base", (0, 1), "ablation", "B1 EDL strength (weaker)",
-               edl=EDLCfg(groups="domain", beta=1e-3)),
+               edl=EDLCfg(groups="domain", beta=1e-3), priority=3),
     Experiment("abl.edl_beta2e-2", "base", (0, 1), "ablation", "B1 EDL strength (stronger)",
-               edl=EDLCfg(groups="domain", beta=2e-2)),
+               edl=EDLCfg(groups="domain", beta=2e-2), priority=3),
     Experiment("abl.edl_upper", "base", (0, 1), "ablation", "B2 EDL on upper half of layers only",
-               edl=EDLCfg(groups="domain", beta=5e-3, layers="upper")),
+               edl=EDLCfg(groups="domain", beta=5e-3, layers="upper"), priority=3),
     Experiment("abl.edl_shuflabels", "base", (0, 1), "ablation",
                "B3 explicit EDL with paper-permuted domain labels",
-               edl=EDLCfg(groups="domain_shuf", beta=5e-3)),
+               edl=EDLCfg(groups="domain_shuf", beta=5e-3), priority=3),
 
     # ---------------- Stage 2: residual banks on frozen token4 s0 (doc §23) -----------------------
-    Experiment("bank.sem", "bank", SEEDS4, "core", "§23 A: semantic oracle", bank=_bank("sem")),
-    Experiment("bank.shuf", "bank", SEEDS4, "core", "§23 B: shuffled oracle", bank=_bank("shuf")),
+    Experiment("bank.sem", "bank", SEEDS4, "core", "§23 A: semantic oracle", bank=_bank("sem"), priority=0),
+    Experiment("bank.shuf", "bank", SEEDS4, "core", "§23 B: shuffled oracle", bank=_bank("shuf"), priority=0),
     Experiment("bank.tok", "bank", SEEDS4, "core", "§23 C: learned token router (= generic bank G)",
-               bank=_bank("tok")),
+               bank=_bank("tok"), priority=0),
     # B4: the "base must already know English" hypothesis - same banks on partially trained bases
     *[Experiment(f"abl.bank_{r}_at{int(f * 100)}", "bank", (0, 1), "ablation",
                  f"B4 {r} bank on the token4 checkpoint at {int(f * 100)}% of training",
-                 bank=_bank(r, base_ckpt=f"frac{f}"))
+                 bank=_bank(r, base_ckpt=f"frac{f}"), priority=1)
       for f in (0.1, 0.25, 0.5) for r in ("sem", "shuf", "tok")],
     # B5: granularity; total bank width fixed (total_hidden split over K specialists)
     *[Experiment(f"abl.bank_{r}_k{k}", "bank", (0, 1), "ablation", f"B5 {r} bank with K={k}",
-                 bank=_bank(r, groups=f"sem_k{k}", width="split"))
+                 bank=_bank(r, groups=f"sem_k{k}", width="split"), priority=2)
       for k in (4, 8, 32) for r in ("sem", "shuf", "tok")],
     # B6: is it routing or just capacity?
     Experiment("abl.bank_dense_compute", "bank", (0, 1), "ablation",
                "B6 always-on residual, compute-matched (one 256-unit MLP)",
-               bank=dict(routing="dense", width="spec")),
+               bank=dict(routing="dense", width="spec"), priority=1),
     Experiment("abl.bank_dense_params", "bank", (0, 1), "ablation",
                "B6 always-on residual, parameter-matched (one 4096-unit MLP)",
-               bank=dict(routing="dense", width="total")),
+               bank=dict(routing="dense", width="total"), priority=1),
     # B7: cluster quality
-    Experiment("abl.bank_minilm", "bank", (0, 1), "ablation", "B7 MiniLM clusters", bank=dict(groups="minilm")),
-    Experiment("abl.bank_tfidf", "bank", (0, 1), "ablation", "B7 tf-idf clusters", bank=dict(groups="tfidf")),
+    Experiment("abl.bank_minilm", "bank", (0, 1), "ablation", "B7 MiniLM clusters", bank=dict(groups="minilm"),
+               priority=2),
+    Experiment("abl.bank_tfidf", "bank", (0, 1), "ablation", "B7 tf-idf clusters", bank=dict(groups="tfidf"),
+               priority=2),
     Experiment("abl.bank_domain", "bank", (0, 1), "ablation", "B7 explicit 5-domain oracle",
-               bank=dict(groups="domain", width="split")),
+               bank=dict(groups="domain", width="split"), priority=2),
     # (B8 "other base seeds" is gone: core bank seed s now sits on TOKEN-4 seed s, as in the original)
 
     # ---------------- Stage 3: causal current-context router (doc §27) ---------------------------
-    Experiment("router.sem", "router", (0, 1, 2), "core", "§27 GRU router over the frozen semantic bank"),
+    Experiment("router.sem", "router", (0, 1, 2), "core", "§27 GRU router over the frozen semantic bank",
+               priority=0),
     Experiment("router.shuf", "router", (0, 1, 2), "core", "§27 same recipe over the shuffled bank",
-               router=dict(bank="bank.shuf", prior_groups="sem_shuf")),
+               router=dict(bank="bank.shuf", prior_groups="sem_shuf"), priority=0),
     # B9: independent specialist-training seeds (doc §32.3 item 1)
     *[Experiment(f"abl.router_{r}_bank{s}", "router", (0,), "ablation",
                  f"B9 router on the {r} bank trained with seed {s}",
-                 router=dict(bank=f"bank.{r}", prior_groups="sem" if r == "sem" else "sem_shuf", bank_seed=s))
+                 router=dict(bank=f"bank.{r}", prior_groups="sem" if r == "sem" else "sem_shuf", bank_seed=s),
+                 priority=1)
       for s in (1, 2, 3) for r in ("sem", "shuf")],
     # B10: router design
     Experiment("abl.router_token_only", "router", (0,), "ablation", "B10 input: current token only",
-               router=dict(inputs="token")),
+               router=dict(inputs="token"), priority=2),
     Experiment("abl.router_ctx_only", "router", (0,), "ablation", "B10 input: context mean only",
-               router=dict(inputs="context")),
-    Experiment("abl.router_mlp", "router", (0,), "ablation", "B10 MLP instead of GRU", router=dict(arch="mlp")),
-    Experiment("abl.router_ctx4", "router", (0,), "ablation", "B10 context window 4", router=dict(ctx_window=4)),
+               router=dict(inputs="context"), priority=2),
+    Experiment("abl.router_mlp", "router", (0,), "ablation", "B10 MLP instead of GRU", router=dict(arch="mlp"), priority=2),
+    Experiment("abl.router_ctx4", "router", (0,), "ablation", "B10 context window 4", router=dict(ctx_window=4), priority=2),
     Experiment("abl.router_ctx64", "router", (0,), "ablation", "B10 context window 64",
-               router=dict(ctx_window=64)),
+               router=dict(ctx_window=64), priority=2),
     Experiment("abl.router_sem0", "router", (0,), "ablation", "B10 teacher without semantic prior",
-               router=dict(sem_weight=0.0)),
+               router=dict(sem_weight=0.0), priority=2),
     Experiment("abl.router_sem1", "router", (0,), "ablation", "B10 teacher with semantic weight 1",
-               router=dict(sem_weight=1.0)),
+               router=dict(sem_weight=1.0), priority=2),
     Experiment("abl.router_ce_only", "router", (0,), "ablation", "B10 expected-CE only (no teacher)",
-               router=dict(w_teacher=0.0, w_ce=1.0)),
+               router=dict(w_teacher=0.0, w_ce=1.0), priority=2),
 ]
 
 REGISTRY = {e.name: e for e in EXPERIMENTS}

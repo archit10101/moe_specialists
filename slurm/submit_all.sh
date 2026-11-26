@@ -100,15 +100,13 @@ if [ "$DRY" != 1 ] && echo "$PLAN" | grep -q $'^prepare\t.*\ttodo\t'; then
     die "raw data not in the cache (compute nodes are offline): run ./slurm/setup_login.sh first"
   fi
 fi
-# jobs some other job depends on (the report aside): their base models are on the critical path
-NEEDED="$(echo "$PLAN" | awk -F'\t' '$1 != "report" { n = split($5, d, ","); for (i = 1; i <= n; i++) print d[i] }' | sort -u)"
 ACTIVE="$( { [ "$DRY" = 1 ] || squeue -h -u "${USER:-$(id -un)}" -o '%j|%i'; } 2>/dev/null | grep "^${JOB_PREFIX}" || true)"
 IDS=""                                    # "key id" lines (bash 3.2 has no associative arrays)
 get_id() { echo "$IDS" | awk -v k="$1" '$1 == k { print $2; exit }'; }
 n_new=0; n_done=0; n_active=0; LIMIT=0
 # Split on '|', not on tabs: bash merges consecutive tabs (IFS whitespace), which shifted every field
 # of a job with no dependencies (prepare) and submitted it without its command.
-while IFS='|' read -r key res time state deps args; do
+while IFS='|' read -r key res time state deps prio args; do
   [ -n "$key" ] || continue
   name="${JOB_PREFIX}$(echo "$key" | tr ':' '_')"
   [ "$SMOKE" = 1 ] && time="$SMOKE_TIME"
@@ -124,8 +122,7 @@ $key $a"; n_active=$((n_active + 1)); printf '  %-44s already queued (%s)\n' "$k
   fi
   # --after: everything but the CPU-only data preparation also waits for that job to succeed
   if [ -n "$AFTER" ] && [ "$key" != prepare ]; then dep="${dep:+$dep,}afterok:$AFTER"; fi
-  JOB_NICE=0
-  if [ "${key%%:*}" = base ] && ! echo "$NEEDED" | grep -qxF "$key"; then JOB_NICE="$LEAF_BASE_NICE"; fi
+  JOB_NICE=$(( PRIORITY_NICE * ${prio%%:*} + SEED_NICE * ${prio##*:} ))
   # shellcheck disable=SC2086
   jid="$(submit "$name" "$time" "$res" "$dep" $args)" && rc=0 || rc=$?
   if [ "$rc" = 10 ]; then LIMIT=1; break; fi

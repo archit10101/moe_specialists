@@ -31,6 +31,8 @@ class Job:
     exp: str = ""
     seed: int = -1
     deps: list = field(default_factory=list)
+    priority: int = 0                   # Experiment.priority (0 = first)
+    seed_rank: int = 0                  # index of the seed in Experiment.seeds (lower seeds run first)
 
     @property
     def resource(self) -> str:
@@ -87,7 +89,8 @@ def build_graph(p: Profile, tier: str = "core", only: list[str] | None = None) -
             deps = [need(rc.bank, rc.bank_seed), need("bank.tok", rc.bank_seed)]
         k = key(exp.kind, exp.name, seed)
         if k not in jobs:
-            add(Job(k, exp.kind, exp.name, seed, deps))
+            rank = exp.seeds.index(seed) if seed in exp.seeds else 0
+            add(Job(k, exp.kind, exp.name, seed, deps, exp.priority, rank))
         return k
 
     for exp in EXPERIMENTS:

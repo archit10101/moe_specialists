@@ -90,9 +90,10 @@ def main(argv=None) -> None:
             for j in jobs:
                 state = "done" if j.done(p) else "todo"
                 if a.format == "tsv":
-                    print("\t".join([j.key, j.resource, j.time, state, ",".join(j.deps), " ".join(j.args())]))
+                    print("\t".join([j.key, j.resource, j.time, state, ",".join(j.deps),
+                                     f"{j.priority}:{j.seed_rank}", " ".join(j.args())]))
                 else:
-                    print(f"{state:4s}  {j.key:42s} {j.resource}  deps: {', '.join(j.deps) or '-'}")
+                    print(f"{state:4s}  P{j.priority}  {j.key:42s} {j.resource}  deps: {', '.join(j.deps) or '-'}")
             return
         for j in jobs:
             if j.done(p):

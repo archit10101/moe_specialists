@@ -42,10 +42,16 @@ It then:
    If the smoke test passes, the real run starts on its own overnight. If it fails, SLURM cancels the real
    jobs. Only the CPU-only `prepare` job (data tokenisation, needed either way) is not gated.
 
-**Critical path first.** ORCD runs at most 2 GPUs per user at a time, and every bank and router (claims
-2-3, ablations B4-B10) needs only the `token4` base models. So base models that no other job depends on
-(claim 1's EDL family, B1-B3) are submitted with `--nice=$LEAF_BASE_NICE` (default 1000) and run after the
-`token4` base and the cheap bank/router jobs. Set `LEAF_BASE_NICE=0` for equal priority.
+**Most important first.** ORCD runs at most 2 GPUs per user at a time, so the order decides what is finished
+first. Each experiment has a `priority` in `repro/config.py`:
+- 0: the `token4` bases, the §23 banks and the §27 routers;
+- 1: claim 1's base models, plus B4, B6 and B9;
+- 2: B5, B7 and B10;
+- 3: B1–B3.
+
+`submit_all.sh` turns it into `--nice = PRIORITY_NICE·priority + SEED_NICE·seed index` (defaults 10000 and 6000,
+in `slurm/config.sh`), so within a level the first seeds come before later ones. Build a partial report at any time
+with `./slurm/report_now.sh`.
 
 **Submit limit.** ORCD caps how many jobs one user can have submitted at once
 (`QOSMaxSubmitJobPerUserLimit`). The smoke test plus the real run can exceed that cap, and `--tier all`
