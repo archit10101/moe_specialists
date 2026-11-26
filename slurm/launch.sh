@@ -7,7 +7,8 @@
 #   ./slurm/launch.sh --dry-run        skip setup, print the sbatch commands, submit nothing
 #
 # What it does, in order:
-#   1. slurm/setup_login.sh (conda env, downloads, offline check, CPU tests). On failure nothing is submitted.
+#   1. slurm/setup_login.sh (conda env, downloads, offline check, CPU tests), then the data preparation for the
+#      smoke and the real run, both on the login node (minutes). On failure nothing is submitted.
 #   2. the smoke pipeline (submit_all.sh --smoke, ~15 min of GPU).
 #   3. a small CPU "gate" job after the smoke report: it succeeds only if every smoke job finished.
 #   4. the real pipeline (submit_all.sh --after <gate>): every job waits for the gate to SUCCEED.
@@ -49,7 +50,16 @@ step() { echo; echo "=== $(date '+%F %T') $*"; }
 DRYFLAG=(); [ "$DRY" = 1 ] && DRYFLAG=( --dry-run )
 
 if [ "$DRY" = 1 ]; then step "1/4 setup: skipped (dry run)"
-else step "1/4 setup (login node)"; "$REPRO_ROOT/slurm/setup_login.sh"; fi
+else
+  step "1/4 setup (login node)"; "$REPRO_ROOT/slurm/setup_login.sh"
+  # Data preparation is CPU-only and takes minutes, and the raw data is already cached here, so build it on the
+  # login node instead of waiting for a CPU node (the job graph then skips `prepare`).
+  step "1/4 data preparation (login node)"
+  (
+    source "$REPRO_ROOT/slurm/env.sh"; repro_activate; cd "$REPRO_ROOT"
+    for prof in smoke full; do OMP_NUM_THREADS=4 python -m repro.run prepare --profile "$prof"; done
+  )
+fi
 
 # SLURM caps how many jobs one user may have submitted (ORCD: QOSMaxSubmitJobPerUserLimit).
 # submit_all.sh then queues what fits and exits 10; we wait for jobs to finish and run it again.

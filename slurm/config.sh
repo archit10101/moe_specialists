@@ -33,8 +33,8 @@
 
 : "${GPU_CPUS:=8}"
 : "${GPU_MEM:=64G}"
-: "${CPU_CPUS:=16}"
-: "${CPU_MEM:=48G}"
+: "${CPU_CPUS:=4}"                     # CPU jobs: data preparation (if not done on the login node) and the report;
+: "${CPU_MEM:=16G}"                    # small requests start sooner on the busy CPU partition
 
 : "${CONDA_MODULE:=miniforge}"
 : "${CONDA_ENV:=repro_moe}"

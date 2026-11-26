@@ -19,8 +19,8 @@ from .config import EXPERIMENTS, Profile, bank_base_seed, bank_cfg, get_experime
 from .utils import data_dir, groups_dir, is_done, run_dir
 
 # per-job SLURM time limits (HH:MM:SS); the bench numbers in docs/ORCD.md explain them
-TIME = dict(prepare="04:00:00", cluster="02:00:00", base="06:00:00", bank="02:00:00", router="04:00:00",
-            report="00:30:00")
+TIME = dict(prepare="01:00:00", cluster="02:00:00", base="06:00:00", bank="02:00:00", router="04:00:00",
+            report="00:15:00")
 CPU_STAGES = {"prepare", "report"}
 
 
