@@ -1,0 +1,64 @@
+{
+  "approved_differing_fields": [
+    "candidate",
+    "description",
+    "family",
+    "role",
+    "routing.allow_test_sizes",
+    "routing.det_kappa",
+    "routing.family",
+    "routing.pool_assign",
+    "routing.pool_dropout",
+    "routing.pool_lb_coeff",
+    "routing.pool_size",
+    "routing.pool_warmup_frac",
+    "routing.refresh_target",
+    "routing.router_lr_mult",
+    "routing.router_temperature",
+    "routing.seg_len",
+    "routing.sel_entropy_coeff",
+    "routing.sel_lr_mult",
+    "routing.sel_temperature",
+    "routing.tau_lr",
+    "run_name"
+  ],
+  "configs": {
+    "G3-A1": {
+      "family": "adaptive",
+      "path": "configs/speculative-pool-routing-v1/final_B100M/seed2/G3-A1.json",
+      "role": "finalist",
+      "sha256": "49d900c4893e927d8259d6133e274fe29b0b3c5aa4fe9701a19b56dbd9bbc657",
+      "token_budget": 100000000
+    },
+    "G3-S1": {
+      "family": "spec",
+      "path": "configs/speculative-pool-routing-v1/final_B100M/seed2/G3-S1.json",
+      "role": "finalist",
+      "sha256": "f4c6117e983cbc15a90b3cceb213374e577fa69eca0e4a1a145c4579532462ef",
+      "token_budget": 100000000
+    },
+    "RC-causal": {
+      "family": "adaptive",
+      "path": "configs/speculative-pool-routing-v1/final_B100M/seed2/RC-causal.json",
+      "role": "random_control",
+      "sha256": "23ddd405bbdd47011b88690b4d2fbf7a0ca97124fd58b86e0a806adf57d655aa",
+      "token_budget": 100000000
+    },
+    "RC-spec": {
+      "family": "spec",
+      "path": "configs/speculative-pool-routing-v1/final_B100M/seed2/RC-spec.json",
+      "role": "random_control",
+      "sha256": "3b81d6144257dce99b4136199a8b1e010c7c83480779b7b63801605f81e3c23f",
+      "token_budget": 100000000
+    },
+    "TOKEN-4": {
+      "family": "token",
+      "path": "configs/speculative-pool-routing-v1/final_B100M/seed2/TOKEN-4.json",
+      "role": "baseline",
+      "sha256": "7e2947a67cfb5cf1365f0a50addbf93de19380213d1eca3fb2e5fadddcad6bb3",
+      "token_budget": 100000000
+    }
+  },
+  "created": "2026-11-06T18:22:08-05:00",
+  "matched_check": "passed"
+}

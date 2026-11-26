@@ -1,0 +1,30 @@
+{
+  "approved_differing_fields": [
+    "attention.cf_frac",
+    "attention.force",
+    "attention.gate_hidden",
+    "attention.kind",
+    "attention.n_full_late",
+    "attention.target_rate",
+    "attention.thr_ema",
+    "attention.window",
+    "candidate",
+    "condition",
+    "role",
+    "run_name"
+  ],
+  "configs": {
+    "FULL-TOKEN-4": {
+      "path": "configs/conditional-local-attention-v1/final/seed0/FULL-TOKEN-4.json",
+      "sha256": "17538203a2abca9e5008591f46c683ff8f7fb7831578a6285f3cbb893f57087f",
+      "token_budget": 100000000
+    },
+    "LOCAL-W128": {
+      "path": "configs/conditional-local-attention-v1/final/seed0/LOCAL-W128.json",
+      "sha256": "1ea225787f755b7cedb2bfa61dd78c8507c9770a366b7fb313f04c67f35e0742",
+      "token_budget": 100000000
+    }
+  },
+  "created": "2026-11-08T03:37:39-05:00",
+  "matched_check": "passed"
+}

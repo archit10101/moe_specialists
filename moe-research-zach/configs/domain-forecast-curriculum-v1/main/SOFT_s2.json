@@ -1,0 +1,75 @@
+{
+  "checkpoints": "fractions",
+  "condition": "SOFT",
+  "condition_long": "SOFT-SPECIALIST->TOKEN-S40",
+  "data": {
+    "dir": "artifacts/domain-forecast-curriculum-v1/data",
+    "domains": [
+      "cs_l1",
+      "math_l1",
+      "physics_l1",
+      "q-bio_l1",
+      "stat_l1"
+    ],
+    "seq_len": 1024,
+    "splits_sha256": "1d7c34b21fd2438d46024eb89e2c56ceed63156ea1eb3fcf56a087b1128f2632"
+  },
+  "experiment": "csr-domain-forecast-curriculum-v1",
+  "init": {
+    "added": "dedicated generator sha256('dfcv1-added|seed')",
+    "backbone": "global RNG seed"
+  },
+  "kind": "main",
+  "model": {
+    "d_model": 192,
+    "dense_ffn": 768,
+    "expert_ffn": 128,
+    "init_std": 0.02,
+    "max_seq_len": 1024,
+    "moe_layers": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "n_experts": 32,
+    "n_head": 8,
+    "n_layer": 8,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "shared_ffn": 256,
+    "tie_embeddings": true,
+    "top_k": 4,
+    "vocab_size": 50304
+  },
+  "order_seed": 1002,
+  "prereg_sha256": "0e10c756476831eeea84986d86747cdce355109596755470bd3cb7c18eb51507",
+  "run_name": "SOFT_s2",
+  "seed": 2,
+  "train": {
+    "accum": 2,
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "decay_frac": 0.2,
+    "log_every": 25,
+    "lr": 0.0006,
+    "micro_batch_rows": 16,
+    "min_lr": 6e-05,
+    "precision": "bf16-autocast",
+    "router_precision": "fp32",
+    "rows_per_step": 32,
+    "state_every_seconds": 600,
+    "throughput_warmup_steps": 10,
+    "token_budget": 112500000,
+    "warmup_steps": 60,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  }
+}

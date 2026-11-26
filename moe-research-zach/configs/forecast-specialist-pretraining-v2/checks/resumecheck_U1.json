@@ -1,0 +1,79 @@
+{
+  "budget_tokens": 1536000,
+  "cache_dir": "artifacts/forecast-specialist-pretraining-v2/cache/main",
+  "category": "checks_and_tests",
+  "checkpoint_fracs": [
+    1.0
+  ],
+  "cond": {
+    "anneal_shape": "linear",
+    "curriculum": true,
+    "distill_coef": 1.0,
+    "dom12": 0.1,
+    "dom3": 0.02,
+    "forecast_source": "match",
+    "router_lr_mult": 1.0,
+    "use_dom": true
+  },
+  "condition": "FORECAST-SPECIALIST",
+  "data_splits_sha256": "efcde27ee890e9831b8bcd7393ddba66b3ed76ad345ed91e58a72fc10185fcbf",
+  "eval_splits": [],
+  "experiment": "csr-forecast-specialist-pretraining-v2",
+  "kind": "main",
+  "knobs": {
+    "anneal_shape": "linear",
+    "distill_coef": 1.0,
+    "dom12": 0.1,
+    "dom3": 0.02,
+    "fc_horizon": 8,
+    "router_lr_mult": 1.0,
+    "spec_beta": 1.0,
+    "topic_halflife": 128.0
+  },
+  "model": {
+    "d_model": 384,
+    "dense_ffn": 1792,
+    "expert_ffn": 256,
+    "fc_dim": 64,
+    "fc_horizon": 8,
+    "init_std": 0.02,
+    "n_domains": 5,
+    "n_experts": 32,
+    "n_head": 6,
+    "n_layer": 12,
+    "n_scalar": 21,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "routing": "spec",
+    "shared_ffn": 768,
+    "spec_beta": 1.0,
+    "teacher": "spec",
+    "teacher_init": 0.0,
+    "top_k": 4,
+    "topic_dim": 64,
+    "topic_halflife": 128.0,
+    "vocab_size": 50304
+  },
+  "protocol_sha256": "e65065d8b3755c0a2b7e463449244bbcd4f4f69bd4219cd27f46ecc5b876a0d9",
+  "run_name": "resumecheck_U1",
+  "seed": 100,
+  "stream": "main",
+  "train": {
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "decay_frac": 0.2,
+    "log_every": 50,
+    "lr": 0.0006,
+    "micro_batch_rows": 32,
+    "min_lr": 6e-05,
+    "rows_per_step": 64,
+    "slot_every_s": 600,
+    "warmup_frac": 0.01,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  }
+}

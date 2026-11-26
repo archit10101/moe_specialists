@@ -1,0 +1,208 @@
+{
+  "bank_milestones": {},
+  "budget_tokens": 245000000,
+  "cond": {
+    "banks": [
+      {
+        "kind": "token",
+        "name": "G"
+      },
+      {
+        "c": 1.0,
+        "ema": 0.99,
+        "eta": 0.5,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SU_bp",
+        "prior": "sem",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 1.0,
+        "ema": 0.99,
+        "eta": 0.5,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SH_bp",
+        "prior": "shuf",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 0.5,
+        "ema": 0.99,
+        "eta": 0.5,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SU_c0.5",
+        "prior": "sem",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 0.5,
+        "ema": 0.99,
+        "eta": 0.5,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SH_c0.5",
+        "prior": "shuf",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 2.0,
+        "ema": 0.99,
+        "eta": 0.5,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SU_c2",
+        "prior": "sem",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 2.0,
+        "ema": 0.99,
+        "eta": 0.5,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SH_c2",
+        "prior": "shuf",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 1.0,
+        "ema": 0.99,
+        "eta": 0.25,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SU_eta0.25",
+        "prior": "sem",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 1.0,
+        "ema": 0.99,
+        "eta": 0.25,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SH_eta0.25",
+        "prior": "shuf",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 1.0,
+        "ema": 0.99,
+        "eta": 1.0,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SU_eta1",
+        "prior": "sem",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 1.0,
+        "ema": 0.99,
+        "eta": 1.0,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SH_eta1",
+        "prior": "shuf",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 1.0,
+        "ema": 0.9,
+        "eta": 0.5,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SU_ema0.9",
+        "prior": "sem",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 1.0,
+        "ema": 0.9,
+        "eta": 0.5,
+        "kind": "util",
+        "lam": 0.3,
+        "name": "SH_ema0.9",
+        "prior": "shuf",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 1.0,
+        "ema": 0.99,
+        "eta": 0.5,
+        "kind": "util",
+        "lam": 1.0,
+        "name": "SU_lam1",
+        "prior": "sem",
+        "router": "meanlast",
+        "util": true
+      },
+      {
+        "c": 1.0,
+        "ema": 0.99,
+        "eta": 0.5,
+        "kind": "util",
+        "lam": 1.0,
+        "name": "SH_lam1",
+        "prior": "shuf",
+        "router": "meanlast",
+        "util": true
+      }
+    ]
+  },
+  "diag_every": 100,
+  "experiment": "csr-crossfit-semantic-utility-residual-v1",
+  "generation": 1,
+  "milestones": {
+    "m20": 318
+  },
+  "model": {
+    "d_model": 384,
+    "dense_ffn": 1792,
+    "expert_ffn": 256,
+    "init_std": 0.02,
+    "n_experts": 32,
+    "n_head": 6,
+    "n_layer": 12,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "router": "linear",
+    "shared_ffn": 768,
+    "teacher": false,
+    "top_k": 4,
+    "vocab_size": 50304
+  },
+  "prereg_sha256": "d90195bb3831680771b64c102d52993cee770a19d35a97fee70145c27cee4a64",
+  "run_name": "S1_g1_s100",
+  "seed": 100,
+  "train": {
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "decay_frac": 0.2,
+    "log_every": 50,
+    "lr": 0.0006,
+    "micro_batch_rows": 32,
+    "min_lr": 6e-05,
+    "rows_per_step": 64,
+    "warmup_frac": 0.01,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  }
+}

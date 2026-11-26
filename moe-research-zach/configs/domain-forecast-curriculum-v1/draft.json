@@ -1,0 +1,66 @@
+{
+  "adapters": {
+    "bottleneck": 32,
+    "per_domain_per_layer": true
+  },
+  "checkpoints": "final",
+  "condition": "DRAFT",
+  "data": {
+    "dir": "artifacts/domain-forecast-curriculum-v1/data",
+    "domains": [
+      "cs_l1",
+      "math_l1",
+      "physics_l1",
+      "q-bio_l1",
+      "stat_l1"
+    ],
+    "seq_len": 1024,
+    "splits_sha256": "1d7c34b21fd2438d46024eb89e2c56ceed63156ea1eb3fcf56a087b1128f2632"
+  },
+  "experiment": "csr-domain-forecast-curriculum-v1",
+  "kind": "draft",
+  "model": {
+    "d_model": 128,
+    "dense_ffn": 512,
+    "expert_ffn": 1,
+    "init_std": 0.02,
+    "max_seq_len": 1024,
+    "moe_layers": [],
+    "n_experts": 1,
+    "n_head": 4,
+    "n_layer": 4,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "shared_ffn": 0,
+    "tie_embeddings": true,
+    "top_k": 1,
+    "vocab_size": 50304
+  },
+  "prereg_sha256": "0e10c756476831eeea84986d86747cdce355109596755470bd3cb7c18eb51507",
+  "run_name": "draft_d128_l4_adapt",
+  "seed": 0,
+  "train": {
+    "accum": 2,
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "decay_frac": 0.2,
+    "log_every": 25,
+    "lr": 0.001,
+    "micro_batch_rows": 16,
+    "min_lr": 0.0001,
+    "order_seed": 7,
+    "precision": "bf16-autocast",
+    "router_precision": "fp32",
+    "rows_per_step": 32,
+    "state_every_seconds": 600,
+    "throughput_warmup_steps": 10,
+    "token_budget": 30000000,
+    "warmup_steps": 60,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  }
+}

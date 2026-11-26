@@ -1,0 +1,78 @@
+{
+  "approved_differing_fields": [
+    "candidate",
+    "description",
+    "family",
+    "role",
+    "routing.allow_test_sizes",
+    "routing.det_kappa",
+    "routing.family",
+    "routing.pool_assign",
+    "routing.pool_dropout",
+    "routing.pool_lb_coeff",
+    "routing.pool_size",
+    "routing.pool_warmup_frac",
+    "routing.refresh_target",
+    "routing.router_lr_mult",
+    "routing.router_temperature",
+    "routing.seg_len",
+    "routing.sel_entropy_coeff",
+    "routing.sel_lr_mult",
+    "routing.sel_temperature",
+    "routing.tau_lr",
+    "run_name"
+  ],
+  "configs": {
+    "G2-A1": {
+      "family": "adaptive",
+      "path": "configs/speculative-pool-routing-v1/gen2/seed99/G2-A1.json",
+      "role": "candidate",
+      "sha256": "fe0727048c0c4847efa7ea4bd557755bb047a4a615a1689bd1fbb8dd95fb6e3f",
+      "token_budget": 20000000
+    },
+    "G2-A2": {
+      "family": "adaptive",
+      "path": "configs/speculative-pool-routing-v1/gen2/seed99/G2-A2.json",
+      "role": "candidate",
+      "sha256": "4cf1615c928940a28a8f100cac33435f56abc6636c7b1bc9ac4ce2ddacfa882c",
+      "token_budget": 20000000
+    },
+    "G2-F1": {
+      "family": "fixed",
+      "path": "configs/speculative-pool-routing-v1/gen2/seed99/G2-F1.json",
+      "role": "candidate",
+      "sha256": "94f7f1946a2d95fe39a8fc7ef346fb0b36c435233ad876fcd2ff7378efd69ddd",
+      "token_budget": 20000000
+    },
+    "G2-F2": {
+      "family": "fixed",
+      "path": "configs/speculative-pool-routing-v1/gen2/seed99/G2-F2.json",
+      "role": "candidate",
+      "sha256": "45094adc390335975f3a820f5fbe079640da864a6c5c9f252a7b5b1d72aa37ec",
+      "token_budget": 20000000
+    },
+    "G2-S1": {
+      "family": "spec",
+      "path": "configs/speculative-pool-routing-v1/gen2/seed99/G2-S1.json",
+      "role": "candidate",
+      "sha256": "e8f1d9303a89ebbb5f895839318374c6f39e7b46b09e8ace410c161cf7525b84",
+      "token_budget": 20000000
+    },
+    "G2-S2": {
+      "family": "spec",
+      "path": "configs/speculative-pool-routing-v1/gen2/seed99/G2-S2.json",
+      "role": "candidate",
+      "sha256": "472ac3e572545e45f9d92cf1aba52f47192679d090b4738ba26e385163d4d52d",
+      "token_budget": 20000000
+    },
+    "TOKEN-4": {
+      "family": "token",
+      "path": "configs/speculative-pool-routing-v1/gen2/seed99/TOKEN-4.json",
+      "role": "baseline",
+      "sha256": "50b715276f6bd1fc0f86b1179f27e684ca75e6c9efd8d7e7c455635dbb96429d",
+      "token_budget": 20000000
+    }
+  },
+  "created": "2026-11-06T15:12:13-05:00",
+  "matched_check": "passed"
+}

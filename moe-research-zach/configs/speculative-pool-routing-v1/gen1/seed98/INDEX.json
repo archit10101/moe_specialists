@@ -1,0 +1,120 @@
+{
+  "approved_differing_fields": [
+    "candidate",
+    "description",
+    "family",
+    "role",
+    "routing.allow_test_sizes",
+    "routing.det_kappa",
+    "routing.family",
+    "routing.pool_assign",
+    "routing.pool_dropout",
+    "routing.pool_lb_coeff",
+    "routing.pool_size",
+    "routing.pool_warmup_frac",
+    "routing.refresh_target",
+    "routing.router_lr_mult",
+    "routing.router_temperature",
+    "routing.seg_len",
+    "routing.sel_entropy_coeff",
+    "routing.sel_lr_mult",
+    "routing.sel_temperature",
+    "routing.tau_lr",
+    "run_name"
+  ],
+  "configs": {
+    "G1-A4M16R50": {
+      "family": "adaptive",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-A4M16R50.json",
+      "role": "candidate",
+      "sha256": "96bac81aa09e665ee4c1702c9fddff2fed3b5644958c30371ba53d15fbdf56b0",
+      "token_budget": 5000000
+    },
+    "G1-A8M16R15": {
+      "family": "adaptive",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-A8M16R15.json",
+      "role": "candidate",
+      "sha256": "826ca7292c0d2c9b54776f94a48aad53f20e544c6e889dfb0f534ff9de08fdb3",
+      "token_budget": 5000000
+    },
+    "G1-A8M16R25": {
+      "family": "adaptive",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-A8M16R25.json",
+      "role": "candidate",
+      "sha256": "3d35d28c53da59f469f4466f9bc74df814b61f7738c0e536999b157edbfe4655",
+      "token_budget": 5000000
+    },
+    "G1-A8M8R25": {
+      "family": "adaptive",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-A8M8R25.json",
+      "role": "candidate",
+      "sha256": "8173301f18e96b9cdb884ff5cd737a6448a816b73cdbe2787070c30c9ef34b79",
+      "token_budget": 5000000
+    },
+    "G1-F4M16": {
+      "family": "fixed",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-F4M16.json",
+      "role": "candidate",
+      "sha256": "6a864dc488e5436f0f20137c8e459faf02ebc2233c99758d1779aac7f231899d",
+      "token_budget": 5000000
+    },
+    "G1-F4M8": {
+      "family": "fixed",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-F4M8.json",
+      "role": "candidate",
+      "sha256": "e6cca271cbcd15a6d28c1b0c64ff415925c0aef504e51b011d65294c40ffb640",
+      "token_budget": 5000000
+    },
+    "G1-F8M16": {
+      "family": "fixed",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-F8M16.json",
+      "role": "candidate",
+      "sha256": "7414414b20ebc16e5ce0f2e48cb441915d60ce06eb8c5e3a4102af43ae8989d7",
+      "token_budget": 5000000
+    },
+    "G1-F8M8": {
+      "family": "fixed",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-F8M8.json",
+      "role": "candidate",
+      "sha256": "5c91699426285953abe212e7840fa82d6ec34f3e2c8af47546216cf97edc690b",
+      "token_budget": 5000000
+    },
+    "G1-S4M16": {
+      "family": "spec",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-S4M16.json",
+      "role": "candidate",
+      "sha256": "ea6a50bfa504b76515f3eaecfdfc9110aff72331fb2d84d2e900ebf8adcac077",
+      "token_budget": 5000000
+    },
+    "G1-S4M8": {
+      "family": "spec",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-S4M8.json",
+      "role": "candidate",
+      "sha256": "aa1dfb51799f43c983a2a6dc46f49f0cdf5638c8ddf8a9f68e13720c349ca012",
+      "token_budget": 5000000
+    },
+    "G1-S8M16": {
+      "family": "spec",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-S8M16.json",
+      "role": "candidate",
+      "sha256": "cfa700d8640164d12ca02ed69ed4c0a70d3179e38481450e681c76a0a9ca2a35",
+      "token_budget": 5000000
+    },
+    "G1-S8M8": {
+      "family": "spec",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/G1-S8M8.json",
+      "role": "candidate",
+      "sha256": "4657ffb6ef3c16e1704e0a9bfbcd9bd5e293bd02b9db5df0a854e8b7c146c9c4",
+      "token_budget": 5000000
+    },
+    "TOKEN-4": {
+      "family": "token",
+      "path": "configs/speculative-pool-routing-v1/gen1/seed98/TOKEN-4.json",
+      "role": "baseline",
+      "sha256": "d2adca87353ec68444676bed981c147845e08ed128ea3f119981a047e56f06fb",
+      "token_budget": 5000000
+    }
+  },
+  "created": "2026-11-06T14:53:49-05:00",
+  "matched_check": "passed"
+}

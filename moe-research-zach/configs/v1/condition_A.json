@@ -1,0 +1,102 @@
+{
+  "condition": "A",
+  "data": {
+    "dir": "artifacts/data/fwe-v1",
+    "packing": "greedy sequential, block-diagonal doc masks",
+    "seq_len": 1024,
+    "splits_sha256": "a0e01e4c7c7330d8a6d51739800d48a0bd5188e37811a05613f84200cbfa0314",
+    "train_order_seed": 17
+  },
+  "eval": {
+    "max_rows": 64,
+    "rows_per_batch": 16,
+    "split": "val"
+  },
+  "experiment": "csr-v1",
+  "init": {
+    "seed": 1234,
+    "type": "random"
+  },
+  "model": {
+    "d_model": 256,
+    "dense_ffn": 1368,
+    "expert_ffn": 176,
+    "init_std": 0.02,
+    "max_seq_len": 1024,
+    "moe_layers": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "n_experts": 64,
+    "n_head": 16,
+    "n_layer": 9,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "shared_ffn": 352,
+    "top_k": 6,
+    "vocab_size": 50304
+  },
+  "routing": {
+    "gate_norm": "global",
+    "mode": "token",
+    "pool_size": 12,
+    "warmup": 16
+  },
+  "run_name": "csr-v1_A",
+  "segmentation": {
+    "cache": "artifacts/segments/611d129276301aee",
+    "cache_id": "611d129276301aee",
+    "fixed_size": 128,
+    "max_len": 256,
+    "min_len": 64,
+    "random_seed": 7,
+    "semantic_tau": 0.36,
+    "strategy": "none"
+  },
+  "semantic": {
+    "comparison_set": "all valid de-duplicated chunks of the micro-batch (complete w-prefix), evenly-spaced subsample to n_max; multiple documents per micro-batch",
+    "enabled": false,
+    "lambda": null,
+    "min_chunks": 16,
+    "n_max": 256,
+    "tau_r": null,
+    "tau_s": null
+  },
+  "train": {
+    "accum": 1,
+    "activation_checkpointing": false,
+    "aux_coeff": 0.01,
+    "aux_scope": "per micro-batch, per MoE layer, summed over layers, non-pad tokens",
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "compile": false,
+    "decay_frac": 0.1,
+    "dropout": 0.0,
+    "eval_every_tokens": 1000000,
+    "grad_probe_every": 25,
+    "log_every": 10,
+    "lr": 0.0003,
+    "max_seconds": 5400,
+    "micro_batch_rows": 16,
+    "min_lr": 3e-05,
+    "precision": "bf16-autocast",
+    "router_precision": "fp32",
+    "save_checkpoint": true,
+    "seed": 0,
+    "throughput_warmup_steps": 10,
+    "token_budget": 3000000,
+    "warmup_steps": 10,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  },
+  "trainable": "all LM parameters (see MODEL_DECISION.md)"
+}

@@ -1,0 +1,96 @@
+{
+  "approved_differing_fields": [
+    "condition",
+    "routing.alpha",
+    "routing.beta",
+    "routing.reference",
+    "routing.scale_control",
+    "routing.schedule",
+    "run_name",
+    "segmentation.strategy"
+  ],
+  "configs": {
+    "alpha_0p0__LOCAL-FIXED": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_0p0__LOCAL-FIXED.json",
+      "sha256": "1e04b55e05f615b8a6cf994152d5b71bb7a3fd992286de5a8d999e96c6150e02"
+    },
+    "alpha_0p0__LOCAL-RANDOM": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_0p0__LOCAL-RANDOM.json",
+      "sha256": "b58bca28f9cb659f1f158b0c5b14a477f9c2f350f1905c0cf1e1b3e1d8264010"
+    },
+    "alpha_0p0__LOCAL-SEMANTIC": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_0p0__LOCAL-SEMANTIC.json",
+      "sha256": "6a6b4e5dc548ddd94a764d859bfb2b8b29897c0bd87f8c35561ccb0dbed24377"
+    },
+    "alpha_0p25__LOCAL-FIXED": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_0p25__LOCAL-FIXED.json",
+      "sha256": "e1191e6a7bf7f0b6e1af32b3bbe76473bb006d317c452f64cc0a4edc7b21f4ca"
+    },
+    "alpha_0p25__LOCAL-RANDOM": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_0p25__LOCAL-RANDOM.json",
+      "sha256": "eafb3a60cfa4efb2fa9bf598f1d3bd835d5dcb53720f3bb6675d56ab3a53d26a"
+    },
+    "alpha_0p25__LOCAL-SEMANTIC": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_0p25__LOCAL-SEMANTIC.json",
+      "sha256": "6647a1247934fa6d4041fe1b4d3da3bd68600eef7c21da6623bbf55d99ce0c8a"
+    },
+    "alpha_0p5__LOCAL-FIXED": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_0p5__LOCAL-FIXED.json",
+      "sha256": "2e18657ea70c059112ad6629c6127588ff0a78298412374da4048ef4590e4148"
+    },
+    "alpha_0p5__LOCAL-RANDOM": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_0p5__LOCAL-RANDOM.json",
+      "sha256": "eff1b41a0a9ee0b59c59299cbab80f18fb2ba8a36554b0b71dbae442754fa881"
+    },
+    "alpha_0p5__LOCAL-SEMANTIC": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_0p5__LOCAL-SEMANTIC.json",
+      "sha256": "0dcb49f737fbd0d5a8e97339a9ade180fc427c8b7d3e0377db892a46dc6a41c8"
+    },
+    "alpha_1p0__LOCAL-FIXED": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_1p0__LOCAL-FIXED.json",
+      "sha256": "1c5dac7fac956e30153246d2e9d9b1e1514083dc24182add5d1904a9053e3fbb"
+    },
+    "alpha_1p0__LOCAL-RANDOM": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_1p0__LOCAL-RANDOM.json",
+      "sha256": "1edc4a5c57ee25b377394901690ded7adff0f7ec6526190c121f3ad9fe6b4683"
+    },
+    "alpha_1p0__LOCAL-SEMANTIC": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/alpha_1p0__LOCAL-SEMANTIC.json",
+      "sha256": "780a0c6b010893cf5fe436ca5da9282d155ab1dd0be970b1cac6c34ec181a595"
+    },
+    "beta_0p0__BROAD-EARLY": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/beta_0p0__BROAD-EARLY.json",
+      "sha256": "efd39645b80ba9f8ea453c663a304b68dd48a4d1074024ef2bc7e74584ad39a3"
+    },
+    "beta_0p0__BROAD-LATE": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/beta_0p0__BROAD-LATE.json",
+      "sha256": "30c25ef5408ff062a68f36e4146257c65f06f09369bfe4f88b85b3721870773e"
+    },
+    "beta_0p25__BROAD-EARLY": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/beta_0p25__BROAD-EARLY.json",
+      "sha256": "165b817b7fedf819e713a83ddf7c153606d3d24f6b69528b0de2a2517c62cc01"
+    },
+    "beta_0p25__BROAD-LATE": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/beta_0p25__BROAD-LATE.json",
+      "sha256": "5fca13a7f150c43f355afdd0ed8af8fc5730cde73b868ba860ef5a2e0ef02d78"
+    },
+    "beta_0p5__BROAD-EARLY": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/beta_0p5__BROAD-EARLY.json",
+      "sha256": "e83f43955d811dbdfbf71cf56f96cb3547b1916d00f06f1cfb292c369b9c79e6"
+    },
+    "beta_0p5__BROAD-LATE": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/beta_0p5__BROAD-LATE.json",
+      "sha256": "60b1a7d3f912c556a4fde989b6c11ffda806e86011230f3b20aaca55732affe7"
+    },
+    "beta_1p0__BROAD-EARLY": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/beta_1p0__BROAD-EARLY.json",
+      "sha256": "37d40265a2f1fd305d6915dcfc9cfee5e45e1f2c092515c71c1c471f0ca64288"
+    },
+    "beta_1p0__BROAD-LATE": {
+      "path": "configs/multiscale-routing-v1/calibration/seed98/beta_1p0__BROAD-LATE.json",
+      "sha256": "b80ad5c85c145eb519a4aec5ff2b0d1d723e5cc0230eaa13024ac2160a6e9ed1"
+    }
+  },
+  "created": "2026-11-02T03:45:56-05:00",
+  "matched_check": "passed"
+}

@@ -1,0 +1,14 @@
+{
+  "bank": "SHUF2",
+  "fold": null,
+  "kind": "linear",
+  "macs": 6732,
+  "n_params": 6766,
+  "router_seed": 0,
+  "seconds": 0.32804441452026367,
+  "seed": 1,
+  "sha256": "7199e17a2999544df92506cccef97480e1c251c203633d263a9871489a772138",
+  "time": "2026-11-23T21:23:11-05:00",
+  "tokens": 400000,
+  "train_tokens_unique": 248361
+}

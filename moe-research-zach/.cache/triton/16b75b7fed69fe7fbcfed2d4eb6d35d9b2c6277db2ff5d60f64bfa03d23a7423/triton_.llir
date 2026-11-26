@@ -1,0 +1,143 @@
+; ModuleID = 'LLVMDialectModule'
+source_filename = "LLVMDialectModule"
+
+@global_smem = external local_unnamed_addr addrspace(3) global [0 x i8], align 16
+
+define void @triton_(ptr addrspace(1) %0, ptr addrspace(1) %1, ptr addrspace(1) %2, i32 %3, i32 %4) local_unnamed_addr !dbg !7 {
+  %6 = tail call i32 asm "mov.u32 $0, %ctaid.x;", "=r"() #3, !dbg !10
+  %7 = shl i32 %6, 3, !dbg !11
+  %8 = tail call i32 @llvm.nvvm.read.ptx.sreg.tid.x(), !dbg !12
+  %9 = and i32 %8, 31, !dbg !12
+  %10 = lshr i32 %8, 5, !dbg !12
+  %11 = lshr i32 %8, 4, !dbg !12
+  %12 = and i32 %11, 7, !dbg !12
+  %13 = and i32 %8, 7, !dbg !12
+  %14 = or disjoint i32 %7, %12, !dbg !13
+  %15 = or disjoint i32 %7, %13, !dbg !13
+  %16 = shl i32 %8, 2, !dbg !14
+  %17 = and i32 %16, 60, !dbg !14
+  %18 = shl i32 %14, 6, !dbg !15
+  %19 = or disjoint i32 %18, %17, !dbg !16
+  %20 = sext i32 %19 to i64, !dbg !17
+  %21 = getelementptr float, ptr addrspace(1) %0, i64 %20, !dbg !17
+  %22 = tail call { i32, i32, i32, i32 } asm sideeffect "mov.u32 $0, 0x0;\0A\09mov.u32 $1, 0x0;\0A\09mov.u32 $2, 0x0;\0A\09mov.u32 $3, 0x0;\0A\09@$5 ld.global.v4.b32 { $0, $1, $2, $3 }, [ $4 + 0 ];", "=r,=r,=r,=r,l,b"(ptr addrspace(1) %21, i1 true) #3, !dbg !18
+  %23 = extractvalue { i32, i32, i32, i32 } %22, 0, !dbg !18
+  %24 = extractvalue { i32, i32, i32, i32 } %22, 1, !dbg !18
+  %25 = extractvalue { i32, i32, i32, i32 } %22, 2, !dbg !18
+  %26 = extractvalue { i32, i32, i32, i32 } %22, 3, !dbg !18
+  %27 = zext nneg i32 %17 to i64, !dbg !19
+  %28 = getelementptr float, ptr addrspace(1) %1, i64 %27, !dbg !19
+  %29 = tail call { i32, i32, i32, i32 } asm sideeffect "mov.u32 $0, 0x0;\0A\09mov.u32 $1, 0x0;\0A\09mov.u32 $2, 0x0;\0A\09mov.u32 $3, 0x0;\0A\09@$5 ld.global.L1::evict_last.v4.b32 { $0, $1, $2, $3 }, [ $4 + 0 ];", "=r,=r,=r,=r,l,b"(ptr addrspace(1) %28, i1 true) #3, !dbg !20
+  %30 = extractvalue { i32, i32, i32, i32 } %29, 0, !dbg !20
+  %31 = extractvalue { i32, i32, i32, i32 } %29, 1, !dbg !20
+  %32 = extractvalue { i32, i32, i32, i32 } %29, 2, !dbg !20
+  %33 = extractvalue { i32, i32, i32, i32 } %29, 3, !dbg !20
+  %34 = insertelement <2 x i32> poison, i32 %23, i64 0, !dbg !18
+  %35 = insertelement <2 x i32> %34, i32 %24, i64 1, !dbg !18
+  %36 = bitcast <2 x i32> %35 to <2 x float>, !dbg !18
+  %37 = insertelement <2 x i32> poison, i32 %30, i64 0, !dbg !20
+  %38 = insertelement <2 x i32> %37, i32 %31, i64 1, !dbg !20
+  %39 = bitcast <2 x i32> %38 to <2 x float>, !dbg !20
+  %40 = fmul <2 x float> %36, %39, !dbg !21
+  %41 = insertelement <2 x i32> poison, i32 %26, i64 0, !dbg !18
+  %42 = insertelement <2 x i32> %41, i32 %25, i64 1, !dbg !18
+  %43 = bitcast <2 x i32> %42 to <2 x float>, !dbg !18
+  %44 = insertelement <2 x i32> poison, i32 %33, i64 0, !dbg !20
+  %45 = insertelement <2 x i32> %44, i32 %32, i64 1, !dbg !20
+  %46 = bitcast <2 x i32> %45 to <2 x float>, !dbg !20
+  %47 = fmul <2 x float> %43, %46, !dbg !21
+  %shift = shufflevector <2 x float> %40, <2 x float> poison, <2 x i32> <i32 1, i32 poison>, !dbg !22
+  %48 = fadd <2 x float> %40, %shift, !dbg !22
+  %shift1 = shufflevector <2 x float> %47, <2 x float> poison, <2 x i32> <i32 1, i32 poison>, !dbg !22
+  %49 = fadd <2 x float> %shift1, %48, !dbg !22
+  %50 = fadd <2 x float> %47, %49, !dbg !22
+  %51 = extractelement <2 x float> %50, i64 0, !dbg !22
+  %52 = bitcast float %51 to i32, !dbg !27
+  %53 = tail call i32 @llvm.nvvm.shfl.sync.bfly.i32(i32 -1, i32 %52, i32 8, i32 31), !dbg !27
+  %54 = bitcast i32 %53 to float, !dbg !27
+  %55 = fadd float %51, %54, !dbg !22
+  %56 = bitcast float %55 to i32, !dbg !27
+  %57 = tail call i32 @llvm.nvvm.shfl.sync.bfly.i32(i32 -1, i32 %56, i32 4, i32 31), !dbg !27
+  %58 = bitcast i32 %57 to float, !dbg !27
+  %59 = fadd float %55, %58, !dbg !22
+  %60 = bitcast float %59 to i32, !dbg !27
+  %61 = tail call i32 @llvm.nvvm.shfl.sync.bfly.i32(i32 -1, i32 %60, i32 2, i32 31), !dbg !27
+  %62 = bitcast i32 %61 to float, !dbg !27
+  %63 = fadd float %59, %62, !dbg !22
+  %64 = bitcast float %63 to i32, !dbg !27
+  %65 = tail call i32 @llvm.nvvm.shfl.sync.bfly.i32(i32 -1, i32 %64, i32 1, i32 31), !dbg !27
+  %66 = bitcast i32 %65 to float, !dbg !27
+  %67 = fadd float %63, %66, !dbg !22
+  %68 = and i32 %10, 3, !dbg !28
+  %69 = lshr i32 %9, 4, !dbg !28
+  %70 = shl nuw nsw i32 %68, 1, !dbg !28
+  %71 = or disjoint i32 %70, %69, !dbg !28
+  %72 = zext nneg i32 %71 to i64, !dbg !28
+  %73 = getelementptr float, ptr addrspace(3) @global_smem, i64 %72, !dbg !28
+  %74 = insertelement <1 x float> poison, float %67, i64 0, !dbg !28
+  store <1 x float> %74, ptr addrspace(3) %73, align 4, !dbg !28
+  tail call void @llvm.nvvm.barrier0(), !dbg !28
+  %75 = zext nneg i32 %13 to i64, !dbg !28
+  %76 = getelementptr float, ptr addrspace(3) @global_smem, i64 %75, !dbg !28
+  %77 = load i32, ptr addrspace(3) %76, align 4, !dbg !28
+  %78 = sext i32 %15 to i64, !dbg !29
+  %79 = getelementptr float, ptr addrspace(1) %2, i64 %78, !dbg !29
+  %80 = lshr i32 %9, 3, !dbg !30
+  %81 = shl nuw nsw i32 %68, 2, !dbg !30
+  %82 = or disjoint i32 %81, %80, !dbg !30
+  %83 = icmp eq i32 %82, 0, !dbg !30
+  tail call void asm sideeffect "@$2 st.global.b32 [ $1 + 0 ], { $0 };", "r,l,b"(i32 %77, ptr addrspace(1) %79, i1 %83) #3, !dbg !30
+  ret void, !dbg !31
+}
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare noundef i32 @llvm.nvvm.read.ptx.sreg.tid.x() #0
+
+; Function Attrs: convergent nocallback nounwind memory(inaccessiblemem: readwrite)
+declare i32 @llvm.nvvm.shfl.sync.bfly.i32(i32, i32, i32, i32) #1
+
+; Function Attrs: convergent nocallback nounwind
+declare void @llvm.nvvm.barrier0() #2
+
+attributes #0 = { mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none) }
+attributes #1 = { convergent nocallback nounwind memory(inaccessiblemem: readwrite) }
+attributes #2 = { convergent nocallback nounwind }
+attributes #3 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+!llvm.dbg.cu = !{!2}
+!nvvm.annotations = !{!4, !5}
+!llvm.ident = !{!6}
+
+!0 = !{i32 2, !"Debug Info Version", i32 3}
+!1 = !{i32 4, !"nvvm-reflect-ftz", i32 1}
+!2 = distinct !DICompileUnit(language: DW_LANG_C, file: !3, producer: "triton", isOptimized: true, runtimeVersion: 0, emissionKind: LineTablesOnly)
+!3 = !DIFile(filename: "cew534fhfqzwx6pkoc4o5jne6if7eszgo6y5bvhkwxztqf4u73uf.py", directory: "/home/zapan4/moe-research/.cache/inductor/ew")
+!4 = !{ptr @triton_, !"kernel", i32 1}
+!5 = !{ptr @triton_, !"maxntidx", i32 128}
+!6 = !{!"clang version 3.8.0 (tags/RELEASE_380/final)"}
+!7 = distinct !DISubprogram(name: "triton_", linkageName: "triton_", scope: !3, file: !3, line: 18, type: !8, scopeLine: 18, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !2)
+!8 = !DISubroutineType(cc: DW_CC_normal, types: !9)
+!9 = !{}
+!10 = !DILocation(line: 22, column: 28, scope: !7)
+!11 = !DILocation(line: 22, column: 33, scope: !7)
+!12 = !DILocation(line: 23, column: 44, scope: !7)
+!13 = !DILocation(line: 23, column: 23, scope: !7)
+!14 = !DILocation(line: 25, column: 34, scope: !7)
+!15 = !DILocation(line: 30, column: 39, scope: !7)
+!16 = !DILocation(line: 30, column: 36, scope: !7)
+!17 = !DILocation(line: 30, column: 30, scope: !7)
+!18 = !DILocation(line: 30, column: 45, scope: !7)
+!19 = !DILocation(line: 31, column: 30, scope: !7)
+!20 = !DILocation(line: 31, column: 35, scope: !7)
+!21 = !DILocation(line: 32, column: 18, scope: !7)
+!22 = !DILocation(line: 256, column: 15, scope: !23, inlinedAt: !26)
+!23 = distinct !DILexicalBlockFile(scope: !25, file: !24, discriminator: 0)
+!24 = !DIFile(filename: "standard.py", directory: "/home/zapan4/moe-research/.venv/lib/python3.12/site-packages/triton/language")
+!25 = distinct !DILexicalBlockFile(scope: !7, file: !24, discriminator: 0)
+!26 = !DILocation(line: 34, column: 24, scope: !7)
+!27 = !DILocation(line: 267, column: 36, scope: !25, inlinedAt: !26)
+!28 = !DILocation(line: 34, column: 27, scope: !7)
+!29 = !DILocation(line: 35, column: 25, scope: !7)
+!30 = !DILocation(line: 35, column: 36, scope: !7)
+!31 = !DILocation(line: 35, column: 4, scope: !7)

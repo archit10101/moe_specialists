@@ -1,0 +1,72 @@
+{
+  "K": 5,
+  "arms": [],
+  "base_ckpt": "runs/20261121T151627Z_cfar1_S1_s100/ckpt_m20",
+  "base_ckpt_sha256": "80e1325cfa0dd787b9e400d83d7de7e1681c1cb014aa13438a7f587fee9d9f46",
+  "base_config": {
+    "budget_tokens": 245000000,
+    "model": {
+      "d_model": 384,
+      "dense_ffn": 1792,
+      "expert_ffn": 256,
+      "init_std": 0.02,
+      "n_experts": 32,
+      "n_head": 6,
+      "n_layer": 12,
+      "norm_eps": 1e-06,
+      "rope_base": 10000.0,
+      "router": "linear",
+      "shared_ffn": 768,
+      "teacher": false,
+      "top_k": 4,
+      "vocab_size": 50304
+    },
+    "seed": 100,
+    "train": {
+      "aux_coeff": 0.01,
+      "betas": [
+        0.9,
+        0.95
+      ],
+      "clip": 1.0,
+      "decay_frac": 0.2,
+      "log_every": 50,
+      "lr": 0.0006,
+      "micro_batch_rows": 32,
+      "min_lr": 6e-05,
+      "rows_per_step": 64,
+      "warmup_frac": 0.01,
+      "weight_decay": 0.1,
+      "z_coeff": 0.001
+    }
+  },
+  "end_step": 382,
+  "experiment": "csr-continuous-base-target-free-asrs-v2",
+  "gen_change": null,
+  "generation": 0,
+  "init_ckpt": ".tmp/csr-continuous-base-target-free-asrs-v2/gpucheck_runs/20261122T050438Z_asrs2_GF/ckpt_F",
+  "init_ckpt_sha256": null,
+  "milestones": {},
+  "mode": "cont",
+  "rewarm": 20,
+  "router_opt": {
+    "betas": [
+      0.9,
+      0.99
+    ],
+    "clip": 1.0,
+    "lam": 0.01,
+    "lr": 0.0003,
+    "wd": 0.01
+  },
+  "router_w": 16,
+  "run_name": "GB",
+  "seeds": [],
+  "slot_every_s": 600,
+  "slot_every_steps": 100,
+  "spec_lr_mult": 1.0,
+  "spec_w": 32,
+  "start_step": 318,
+  "test": true,
+  "verify_ckpt": true
+}

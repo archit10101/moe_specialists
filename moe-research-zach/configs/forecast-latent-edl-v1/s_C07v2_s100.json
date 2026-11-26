@@ -1,0 +1,65 @@
+{
+  "budget_tokens": 245000000,
+  "category": "search",
+  "cond": {
+    "latent": {
+      "beta": 0.0001,
+      "cfg_id": "A2_K16_L256",
+      "layers": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "shuffle": false,
+      "table": "artifacts/forecast-latent-edl-v1/latent/A2_K16_L256/q_search_main.npz",
+      "table_sha256": "3578fc10249e1b553bc912cfc4ebc9760fe3faa740d065578cdfd0be4a3d41bd"
+    }
+  },
+  "diag_every": 25,
+  "experiment": "csr-forecast-latent-edl-v1",
+  "kind": "search",
+  "milestones": {
+    "s20": 318,
+    "s5": 80,
+    "s50": 793
+  },
+  "model": {
+    "d_model": 384,
+    "dense_ffn": 1792,
+    "expert_ffn": 256,
+    "init_std": 0.02,
+    "n_experts": 32,
+    "n_head": 6,
+    "n_layer": 12,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "router": "linear",
+    "shared_ffn": 768,
+    "teacher": false,
+    "top_k": 4,
+    "vocab_size": 50304
+  },
+  "prereg_sha256": "8f5439dd45f3d226b86e20e82d847c3d0601f5a92b88c4cbdc32fbf056264a48",
+  "run_name": "s_C07v2_s100",
+  "seed": 100,
+  "train": {
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "decay_frac": 0.2,
+    "log_every": 50,
+    "lr": 0.0006,
+    "micro_batch_rows": 32,
+    "min_lr": 6e-05,
+    "rows_per_step": 64,
+    "warmup_frac": 0.01,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  }
+}

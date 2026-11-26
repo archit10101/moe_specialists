@@ -1,0 +1,45 @@
+{
+  "approved_differing_fields": [
+    "attention.cf_frac",
+    "attention.force",
+    "attention.gate_hidden",
+    "attention.kind",
+    "attention.n_full_late",
+    "attention.target_rate",
+    "attention.thr_ema",
+    "attention.window",
+    "candidate",
+    "condition",
+    "role",
+    "run_name"
+  ],
+  "configs": {
+    "FULL-TOKEN-4": {
+      "path": "configs/conditional-local-attention-v1/gen2/seed98/FULL-TOKEN-4.json",
+      "sha256": "48c48a6b373145b5887f8a82a50396c5a68cf48703160204a3ed15b5ecb91c69",
+      "token_budget": 20000000
+    },
+    "G256-10": {
+      "path": "configs/conditional-local-attention-v1/gen2/seed98/G256-10.json",
+      "sha256": "87bd711511177e5b9c4aece632daffb972da0cfc534b60c3adcb0c8c81295bb3",
+      "token_budget": 20000000
+    },
+    "HYBRID-W256-LATE2": {
+      "path": "configs/conditional-local-attention-v1/gen2/seed98/HYBRID-W256-LATE2.json",
+      "sha256": "d1df655a00cfe8b33253435ffe45c373cc79745e9a0a32ea15d8b74128c36358",
+      "token_budget": 20000000
+    },
+    "HYBRID-W256-LATE4": {
+      "path": "configs/conditional-local-attention-v1/gen2/seed98/HYBRID-W256-LATE4.json",
+      "sha256": "cbce4917d44ce3c8b068660de38d869d73befc10cc07927e08e7f592a13c4987",
+      "token_budget": 20000000
+    },
+    "LOCAL-W128": {
+      "path": "configs/conditional-local-attention-v1/gen2/seed98/LOCAL-W128.json",
+      "sha256": "610a18ed6ade846956424b07569a72f1fc5701b5f88b90035c8863cf26ea59b7",
+      "token_budget": 20000000
+    }
+  },
+  "created": "2026-11-08T03:04:32-05:00",
+  "matched_check": "passed"
+}

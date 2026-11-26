@@ -1,0 +1,75 @@
+[
+  {
+    "A": "soft",
+    "bank": "SEM",
+    "feats": "base",
+    "mode": "scu",
+    "rho": 1.0,
+    "tag": "SCU_g2",
+    "tau": 0.25,
+    "w": {
+      "balance": 0.01,
+      "lm": 1.0,
+      "regret": 0.0,
+      "subject": 1.0,
+      "utility": 0.0
+    }
+  },
+  {
+    "A": "soft",
+    "bank": "SHUF",
+    "feats": "base",
+    "mode": "scu",
+    "rho": 1.0,
+    "tag": "SCU_g2_SHUF",
+    "tau": 0.25,
+    "twin_of": "SCU_g2",
+    "w": {
+      "balance": 0.01,
+      "lm": 1.0,
+      "regret": 0.0,
+      "subject": 1.0,
+      "utility": 0.0
+    }
+  },
+  {
+    "bank": "SEM",
+    "feats": "base",
+    "mode": "subject",
+    "tag": "SUBJ",
+    "w": {
+      "subject": 1.0
+    }
+  },
+  {
+    "bank": "SHUF",
+    "feats": "base",
+    "mode": "subject",
+    "tag": "SUBJ_SHUF",
+    "twin_of": "SUBJ",
+    "w": {
+      "subject": 1.0
+    }
+  },
+  {
+    "bank": "SEM",
+    "feats": "base",
+    "mode": "utility",
+    "tag": "UTIL",
+    "w": {
+      "balance": 0.01,
+      "lm": 1.0
+    }
+  },
+  {
+    "bank": "SHUF",
+    "feats": "base",
+    "mode": "utility",
+    "tag": "UTIL_SHUF",
+    "twin_of": "UTIL",
+    "w": {
+      "balance": 0.01,
+      "lm": 1.0
+    }
+  }
+]

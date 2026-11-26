@@ -1,0 +1,200 @@
+; ModuleID = 'LLVMDialectModule'
+source_filename = "LLVMDialectModule"
+
+@global_smem = external local_unnamed_addr addrspace(3) global [0 x i8], align 16
+
+define void @triton_(ptr addrspace(1) %0, ptr addrspace(1) %1, ptr addrspace(1) %2, i32 %3, i32 %4) local_unnamed_addr !dbg !7 {
+  %6 = tail call i32 asm "mov.u32 $0, %ctaid.x;", "=r"() #3, !dbg !10
+  %7 = shl i32 %6, 6, !dbg !11
+  %8 = tail call i32 @llvm.nvvm.read.ptx.sreg.tid.x(), !dbg !12
+  %9 = and i32 %8, 3, !dbg !12
+  %10 = and i32 %8, 63, !dbg !12
+  %11 = lshr i32 %8, 2, !dbg !12
+  %12 = and i32 %11, 63, !dbg !12
+  %13 = or disjoint i32 %7, %10, !dbg !13
+  %14 = or disjoint i32 %7, %12, !dbg !13
+  %15 = icmp slt i32 %13, 1024, !dbg !14
+  %16 = icmp slt i32 %14, 1024, !dbg !14
+  %17 = sdiv i32 %13, 8, !dbg !15
+  %.frozen = freeze i32 %14
+  %18 = sdiv i32 %.frozen, 8, !dbg !15
+  %19 = mul i32 %18, 8
+  %.decomposed = sub i32 %.frozen, %19
+  %20 = sdiv i32 %14, 64, !dbg !16
+  %21 = srem i32 %18, 8, !dbg !17
+  %22 = shl i32 %17, 7, !dbg !18
+  %23 = shl nsw i32 %.decomposed, 7, !dbg !19
+  %24 = shl i32 %20, 10, !dbg !20
+  %25 = shl nsw i32 %21, 7, !dbg !21
+  %26 = lshr i32 %8, 6
+  %27 = and i32 %26, 3
+  %28 = mul nuw nsw i32 %10, 5
+  %29 = add nuw nsw i32 %28, %27
+  %30 = zext nneg i32 %29 to i64
+  %31 = getelementptr i64, ptr addrspace(3) @global_smem, i64 %30
+  %32 = lshr i32 %8, 2
+  %33 = and i32 %32, 7
+  %34 = lshr i32 %8, 2
+  %35 = and i32 %34, 56
+  %36 = or disjoint i32 %35, %33
+  %37 = mul nuw nsw i32 %36, 5
+  %38 = add nuw nsw i32 %37, %9
+  %39 = zext nneg i32 %38 to i64
+  %40 = getelementptr i64, ptr addrspace(3) @global_smem, i64 %39
+  br label %41, !dbg !22
+
+41:                                               ; preds = %5, %41
+  %42 = phi i64 [ 0, %5 ], [ %62, %41 ]
+  %43 = phi i32 [ 0, %5 ], [ %63, %41 ]
+  %44 = lshr i32 %43, 7, !dbg !23
+  %.masked = and i32 %43, 124, !dbg !24
+  %45 = add nuw nsw i32 %44, %22, !dbg !25
+  %46 = sext i32 %45 to i64, !dbg !26
+  %47 = getelementptr i64, ptr addrspace(1) %0, i64 %46, !dbg !26
+  %48 = tail call i64 asm sideeffect "mov.u64 $0, 0x0;\0A\09@$2 ld.global.L1::evict_last.b64 { $0 }, [ $1 + 0 ];\0A\09@!$3 mov.u64 $0, 0x0;", "=l,l,b,b"(ptr addrspace(1) %47, i1 %15, i1 %15) #3, !dbg !27
+  tail call void @llvm.nvvm.barrier0(), !dbg !27
+  %49 = insertelement <1 x i64> poison, i64 %48, i64 0, !dbg !27
+  store <1 x i64> %49, ptr addrspace(3) %31, align 8, !dbg !27
+  tail call void @llvm.nvvm.barrier0(), !dbg !27
+  %50 = load i64, ptr addrspace(3) %40, align 8, !dbg !27
+  %51 = or disjoint i32 %.masked, %23, !dbg !28
+  %52 = or disjoint i32 %51, %9, !dbg !28
+  %53 = add i32 %52, %24, !dbg !29
+  %54 = sext i32 %53 to i64, !dbg !30
+  %55 = getelementptr i64, ptr addrspace(1) %0, i64 %54, !dbg !30
+  %56 = tail call i64 asm sideeffect "mov.u64 $0, 0x0;\0A\09@$2 ld.global.L1::evict_last.b64 { $0 }, [ $1 + 0 ];\0A\09@!$3 mov.u64 $0, 0x0;", "=l,l,b,b"(ptr addrspace(1) %55, i1 %16, i1 %16) #3, !dbg !31
+  %57 = icmp eq i64 %50, %56, !dbg !32
+  %58 = add nuw nsw i32 %44, %25, !dbg !33
+  %59 = icmp sle i32 %52, %58, !dbg !34
+  %60 = and i1 %59, %57, !dbg !35
+  %narrow = select i1 %16, i1 %60, i1 false, !dbg !36
+  %61 = zext i1 %narrow to i64, !dbg !36
+  %62 = add i64 %42, %61, !dbg !36
+  %63 = add nuw nsw i32 %43, 4, !dbg !22
+  %64 = icmp ult i32 %43, 16380, !dbg !22
+  br i1 %64, label %41, label %65, !dbg !22
+
+65:                                               ; preds = %41
+  %66 = trunc i64 %62 to i32, !dbg !37
+  %67 = tail call i32 @llvm.nvvm.shfl.sync.bfly.i32(i32 -1, i32 %66, i32 2, i32 31), !dbg !37
+  %bc = bitcast i64 %62 to <2 x i32>, !dbg !37
+  %68 = extractelement <2 x i32> %bc, i64 1, !dbg !37
+  %69 = tail call i32 @llvm.nvvm.shfl.sync.bfly.i32(i32 -1, i32 %68, i32 2, i32 31), !dbg !37
+  %70 = insertelement <2 x i32> poison, i32 %67, i64 0, !dbg !37
+  %71 = insertelement <2 x i32> %70, i32 %69, i64 1, !dbg !37
+  %72 = bitcast <2 x i32> %71 to i64, !dbg !37
+  %73 = add i64 %62, %72, !dbg !41
+  %74 = trunc i64 %73 to i32, !dbg !37
+  %75 = tail call i32 @llvm.nvvm.shfl.sync.bfly.i32(i32 -1, i32 %74, i32 1, i32 31), !dbg !37
+  %bc3 = bitcast i64 %73 to <2 x i32>, !dbg !37
+  %76 = extractelement <2 x i32> %bc3, i64 1, !dbg !37
+  %77 = tail call i32 @llvm.nvvm.shfl.sync.bfly.i32(i32 -1, i32 %76, i32 1, i32 31), !dbg !37
+  %78 = insertelement <2 x i32> poison, i32 %75, i64 0, !dbg !37
+  %79 = insertelement <2 x i32> %78, i32 %77, i64 1, !dbg !37
+  %80 = bitcast <2 x i32> %79 to i64, !dbg !37
+  %81 = add i64 %73, %80, !dbg !41
+  %82 = add i64 %81, -1, !dbg !43
+  %83 = icmp ult i64 %82, 16383, !dbg !43
+  tail call void @llvm.nvvm.barrier0(), !dbg !44
+  %84 = zext nneg i32 %36 to i64, !dbg !44
+  %85 = getelementptr i8, ptr addrspace(3) @global_smem, i64 %84, !dbg !44
+  %86 = zext i1 %83 to i8, !dbg !44
+  %87 = insertelement <1 x i8> poison, i8 %86, i64 0, !dbg !44
+  store <1 x i8> %87, ptr addrspace(3) %85, align 1, !dbg !44
+  tail call void @llvm.nvvm.barrier0(), !dbg !44
+  %88 = zext nneg i32 %10 to i64, !dbg !44
+  %89 = getelementptr i8, ptr addrspace(3) @global_smem, i64 %88, !dbg !44
+  %90 = load i8, ptr addrspace(3) %89, align 1, !dbg !44
+  %91 = icmp ne i8 %90, 0, !dbg !44
+  %92 = zext i1 %91 to i8, !dbg !44
+  %93 = icmp eq i64 %81, 16384, !dbg !45
+  tail call void @llvm.nvvm.barrier0(), !dbg !46
+  %94 = zext i1 %93 to i8, !dbg !46
+  %95 = insertelement <1 x i8> poison, i8 %94, i64 0, !dbg !46
+  store <1 x i8> %95, ptr addrspace(3) %85, align 1, !dbg !46
+  tail call void @llvm.nvvm.barrier0(), !dbg !46
+  %96 = load i8, ptr addrspace(3) %89, align 1, !dbg !46
+  %97 = icmp ne i8 %96, 0, !dbg !46
+  %98 = zext i1 %97 to i8, !dbg !46
+  %99 = sext i32 %13 to i64, !dbg !47
+  %100 = getelementptr i8, ptr addrspace(1) %1, i64 %99, !dbg !47
+  %101 = and i32 %8, 192, !dbg !48
+  %102 = icmp eq i32 %101, 0, !dbg !48
+  %103 = and i1 %102, %15, !dbg !48
+  tail call void asm sideeffect "@$2 st.global.b8 [ $1 + 0 ], { $0 };", "c,l,b"(i8 %92, ptr addrspace(1) %100, i1 %103) #3, !dbg !48
+  %104 = getelementptr i8, ptr addrspace(1) %2, i64 %99, !dbg !49
+  tail call void asm sideeffect "@$2 st.global.b8 [ $1 + 0 ], { $0 };", "c,l,b"(i8 %98, ptr addrspace(1) %104, i1 %103) #3, !dbg !50
+  ret void, !dbg !51
+}
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare noundef i32 @llvm.nvvm.read.ptx.sreg.tid.x() #0
+
+; Function Attrs: convergent nocallback nounwind memory(inaccessiblemem: readwrite)
+declare i32 @llvm.nvvm.shfl.sync.bfly.i32(i32, i32, i32, i32) #1
+
+; Function Attrs: convergent nocallback nounwind
+declare void @llvm.nvvm.barrier0() #2
+
+attributes #0 = { mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none) }
+attributes #1 = { convergent nocallback nounwind memory(inaccessiblemem: readwrite) }
+attributes #2 = { convergent nocallback nounwind }
+attributes #3 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+!llvm.dbg.cu = !{!2}
+!nvvm.annotations = !{!4, !5}
+!llvm.ident = !{!6}
+
+!0 = !{i32 2, !"Debug Info Version", i32 3}
+!1 = !{i32 4, !"nvvm-reflect-ftz", i32 1}
+!2 = distinct !DICompileUnit(language: DW_LANG_C, file: !3, producer: "triton", isOptimized: true, runtimeVersion: 0, emissionKind: LineTablesOnly)
+!3 = !DIFile(filename: "cq5cbdholgmoh5zxduhzk25edxpx6yn5iy64whzclcvk7jgjmrok.py", directory: "/home/zapan4/moe-research/.cache/inductor/q5")
+!4 = !{ptr @triton_, !"kernel", i32 1}
+!5 = !{ptr @triton_, !"maxntidx", i32 256}
+!6 = !{!"clang version 3.8.0 (tags/RELEASE_380/final)"}
+!7 = distinct !DISubprogram(name: "triton_", linkageName: "triton_", scope: !3, file: !3, line: 18, type: !8, scopeLine: 18, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !2)
+!8 = !DISubroutineType(cc: DW_CC_normal, types: !9)
+!9 = !{}
+!10 = !DILocation(line: 21, column: 28, scope: !7)
+!11 = !DILocation(line: 21, column: 33, scope: !7)
+!12 = !DILocation(line: 22, column: 44, scope: !7)
+!13 = !DILocation(line: 22, column: 23, scope: !7)
+!14 = !DILocation(line: 23, column: 21, scope: !7)
+!15 = !DILocation(line: 25, column: 20, scope: !7)
+!16 = !DILocation(line: 27, column: 20, scope: !7)
+!17 = !DILocation(line: 28, column: 25, scope: !7)
+!18 = !DILocation(line: 36, column: 44, scope: !7)
+!19 = !DILocation(line: 37, column: 44, scope: !7)
+!20 = !DILocation(line: 37, column: 56, scope: !7)
+!21 = !DILocation(line: 40, column: 25, scope: !7)
+!22 = !DILocation(line: 31, column: 36, scope: !7)
+!23 = !DILocation(line: 34, column: 24, scope: !7)
+!24 = !DILocation(line: 35, column: 22, scope: !7)
+!25 = !DILocation(line: 36, column: 40, scope: !7)
+!26 = !DILocation(line: 36, column: 34, scope: !7)
+!27 = !DILocation(line: 36, column: 50, scope: !7)
+!28 = !DILocation(line: 37, column: 40, scope: !7)
+!29 = !DILocation(line: 37, column: 51, scope: !7)
+!30 = !DILocation(line: 37, column: 34, scope: !7)
+!31 = !DILocation(line: 37, column: 62, scope: !7)
+!32 = !DILocation(line: 38, column: 23, scope: !7)
+!33 = !DILocation(line: 40, column: 21, scope: !7)
+!34 = !DILocation(line: 41, column: 23, scope: !7)
+!35 = !DILocation(line: 42, column: 22, scope: !7)
+!36 = !DILocation(line: 46, column: 47, scope: !7)
+!37 = !DILocation(line: 267, column: 36, scope: !38, inlinedAt: !40)
+!38 = distinct !DILexicalBlockFile(scope: !7, file: !39, discriminator: 0)
+!39 = !DIFile(filename: "standard.py", directory: "/home/zapan4/moe-research/.venv/lib/python3.12/site-packages/triton/language")
+!40 = !DILocation(line: 47, column: 25, scope: !7)
+!41 = !DILocation(line: 256, column: 15, scope: !42, inlinedAt: !40)
+!42 = distinct !DILexicalBlockFile(scope: !38, file: !39, discriminator: 0)
+!43 = !DILocation(line: 52, column: 20, scope: !7)
+!44 = !DILocation(line: 53, column: 21, scope: !7)
+!45 = !DILocation(line: 54, column: 20, scope: !7)
+!46 = !DILocation(line: 55, column: 21, scope: !7)
+!47 = !DILocation(line: 56, column: 25, scope: !7)
+!48 = !DILocation(line: 56, column: 37, scope: !7)
+!49 = !DILocation(line: 57, column: 25, scope: !7)
+!50 = !DILocation(line: 57, column: 37, scope: !7)
+!51 = !DILocation(line: 57, column: 4, scope: !7)

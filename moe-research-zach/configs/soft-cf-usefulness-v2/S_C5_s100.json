@@ -1,0 +1,76 @@
+{
+  "budget_tokens": 245000000,
+  "category": "search",
+  "cond": {
+    "paper_latent": {
+      "beta": 0.0,
+      "table": "artifacts/semantic-edl-v1/tables/table_SEM_T05.npz",
+      "table_sha256": "5d23129b2cb7aed6a0d2ed768b1a755eac661dae95ddeace89329dc7b56b89d2"
+    },
+    "soft_cf": {
+      "clip": 3.0,
+      "estimator": "mean",
+      "form": "tilt",
+      "gamma": 0.006,
+      "m_min": 2.0,
+      "min_len": 256,
+      "n_min": 8,
+      "onset_step": 100,
+      "prior_rho": 0.98,
+      "probe_passes": 8,
+      "probe_rows": 16,
+      "ramp_steps": 50,
+      "refresh_every": 10,
+      "rho": 0.998,
+      "tau": 1.0,
+      "z_lcb": 1.0
+    }
+  },
+  "diag_every": 100,
+  "experiment": "csr-soft-cf-usefulness-v2",
+  "kind": "final",
+  "milestones": {
+    "p040": 1552,
+    "p060": 2328,
+    "p080": 3104,
+    "p100": 3880,
+    "s20": 318,
+    "s50": 793
+  },
+  "model": {
+    "d_model": 384,
+    "dense_ffn": 1792,
+    "expert_ffn": 256,
+    "init_std": 0.02,
+    "n_experts": 32,
+    "n_head": 6,
+    "n_layer": 12,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "router": "linear",
+    "shared_ffn": 768,
+    "teacher": false,
+    "top_k": 4,
+    "vocab_size": 50304
+  },
+  "prereg_sha256": "bd52f79d42a34e871b9ab5134e89bf389b09754db0906fc154890760ec27dde6",
+  "run_name": "S_C5_s100",
+  "seed": 100,
+  "train": {
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "decay_frac": 0.2,
+    "log_every": 50,
+    "lr": 0.0006,
+    "micro_batch_rows": 32,
+    "min_lr": 6e-05,
+    "rows_per_step": 64,
+    "warmup_frac": 0.01,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  }
+}

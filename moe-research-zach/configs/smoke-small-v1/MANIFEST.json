@@ -1,0 +1,193 @@
+{
+  "approved_differing_fields": [
+    "condition",
+    "routing.mode",
+    "run_name",
+    "segmentation.strategy",
+    "semantic.enabled"
+  ],
+  "conditions": {
+    "A": {
+      "condition": "A",
+      "routing.mode": "token",
+      "run_name": "csr-smoke-small-v1_A",
+      "segmentation.strategy": "none",
+      "semantic.enabled": false
+    },
+    "B": {
+      "condition": "B",
+      "routing.mode": "pool",
+      "run_name": "csr-smoke-small-v1_B",
+      "segmentation.strategy": "fixed",
+      "semantic.enabled": false
+    },
+    "C": {
+      "condition": "C",
+      "routing.mode": "pool",
+      "run_name": "csr-smoke-small-v1_C",
+      "segmentation.strategy": "fixed",
+      "semantic.enabled": true
+    },
+    "D": {
+      "condition": "D",
+      "routing.mode": "pool",
+      "run_name": "csr-smoke-small-v1_D",
+      "segmentation.strategy": "semantic",
+      "semantic.enabled": false
+    },
+    "E": {
+      "condition": "E",
+      "routing.mode": "pool",
+      "run_name": "csr-smoke-small-v1_E",
+      "segmentation.strategy": "semantic",
+      "semantic.enabled": true
+    },
+    "F": {
+      "condition": "F",
+      "routing.mode": "pool",
+      "run_name": "csr-smoke-small-v1_F",
+      "segmentation.strategy": "random",
+      "semantic.enabled": false
+    }
+  },
+  "contrasts": {
+    "primary_H2": [
+      "D",
+      "F"
+    ],
+    "primary_H3": [
+      "E",
+      "D"
+    ],
+    "secondary_sem_vs_fixed": [
+      "D",
+      "B"
+    ],
+    "support_boundary_with_semloss": [
+      "E",
+      "C"
+    ],
+    "support_pool": [
+      "B",
+      "A"
+    ],
+    "support_semloss_fixed": [
+      "C",
+      "B"
+    ]
+  },
+  "data_manifest": null,
+  "notes": {
+    "derived_from": {
+      "path": "configs/v2/base.json",
+      "sha256": "8abfe974b6bb9a87868dddd944ca9e258fa1716112eeae55919a29f44c888310"
+    },
+    "differs_from_v2_only_in": [
+      "derived_from.path",
+      "derived_from.sha256",
+      "experiment",
+      "model.d_model",
+      "model.dense_ffn",
+      "model.expert_ffn",
+      "model.max_seq_len",
+      "model.moe_layers",
+      "model.n_experts",
+      "model.n_head",
+      "model.n_layer",
+      "model.shared_ffn",
+      "model.top_k",
+      "result_label",
+      "routing.pool_size",
+      "train.token_budget"
+    ],
+    "label": "ENGINEERING SMOKE TEST ONLY - small model, not experimental evidence"
+  },
+  "schema": "csr-manifest-v1",
+  "segmentation_manifest": null,
+  "shared_fields": {
+    "data.dir": "artifacts/data/fwe-v1",
+    "data.packing": "greedy sequential, block-diagonal doc masks",
+    "data.seq_len": 1024,
+    "data.splits_sha256": "a0e01e4c7c7330d8a6d51739800d48a0bd5188e37811a05613f84200cbfa0314",
+    "data.train_order_seed": 17,
+    "derived_from.path": "configs/v2/base.json",
+    "derived_from.sha256": "8abfe974b6bb9a87868dddd944ca9e258fa1716112eeae55919a29f44c888310",
+    "eval.max_rows": 64,
+    "eval.rows_per_batch": 16,
+    "eval.split": "val",
+    "experiment": "csr-smoke-small-v1",
+    "init.seed": 1234,
+    "init.type": "random",
+    "model.d_model": 128,
+    "model.dense_ffn": 512,
+    "model.expert_ffn": 64,
+    "model.init_std": 0.02,
+    "model.max_seq_len": 1024,
+    "model.moe_layers": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "model.n_experts": 16,
+    "model.n_head": 8,
+    "model.n_layer": 6,
+    "model.norm_eps": 1e-06,
+    "model.rope_base": 10000.0,
+    "model.shared_ffn": 128,
+    "model.top_k": 2,
+    "model.vocab_size": 50304,
+    "result_label": "ENGINEERING SMOKE TEST ONLY - small model, not experimental evidence",
+    "routing.gate_norm": "global",
+    "routing.pool_size": 4,
+    "routing.warmup": 16,
+    "segmentation.cache": "artifacts/segments/611d129276301aee",
+    "segmentation.cache_id": "611d129276301aee",
+    "segmentation.fixed_size": 128,
+    "segmentation.max_len": 256,
+    "segmentation.min_len": 64,
+    "segmentation.random_acceptance": "all criteria except user-exempted: final_mean_abs, nonfinal_mean_abs",
+    "segmentation.random_cache": "artifacts/segments_random/8c1102239971ba4e",
+    "segmentation.random_cache_id": "8c1102239971ba4e",
+    "segmentation.random_generator": "csr-random-hazard-v2",
+    "segmentation.random_seed": 7,
+    "segmentation.semantic_tau": 0.36,
+    "semantic.comparison_set": "all valid de-duplicated chunks of the micro-batch (complete w-prefix), evenly-spaced subsample to n_max; multiple documents per micro-batch",
+    "semantic.lambda": null,
+    "semantic.min_chunks": 16,
+    "semantic.n_max": 256,
+    "semantic.tau_r": null,
+    "semantic.tau_s": null,
+    "train.accum": 1,
+    "train.activation_checkpointing": false,
+    "train.aux_coeff": 0.01,
+    "train.aux_scope": "per micro-batch, per MoE layer, summed over layers, non-pad tokens",
+    "train.betas": [
+      0.9,
+      0.95
+    ],
+    "train.clip": 1.0,
+    "train.compile": false,
+    "train.decay_frac": 0.1,
+    "train.dropout": 0.0,
+    "train.eval_every_tokens": 1000000,
+    "train.grad_probe_every": 25,
+    "train.log_every": 10,
+    "train.lr": 0.0003,
+    "train.max_seconds": 5400,
+    "train.micro_batch_rows": 16,
+    "train.min_lr": 3e-05,
+    "train.precision": "bf16-autocast",
+    "train.router_precision": "fp32",
+    "train.save_checkpoint": true,
+    "train.seed": 0,
+    "train.throughput_warmup_steps": 10,
+    "train.token_budget": 300000,
+    "train.warmup_steps": 10,
+    "train.weight_decay": 0.1,
+    "train.z_coeff": 0.001,
+    "trainable": "all LM parameters (see MODEL_DECISION.md)"
+  },
+  "shared_fields_sha256": "185c668f2fdac44e8b277d79663a4ba61e9eb3d0525349a4be78392f77a7cf23"
+}

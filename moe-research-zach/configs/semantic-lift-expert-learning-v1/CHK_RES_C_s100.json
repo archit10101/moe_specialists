@@ -1,0 +1,60 @@
+{
+  "budget_tokens": 245000000,
+  "category": "check",
+  "cond": {
+    "lift": {
+      "floor": 0.02,
+      "frac": 0.005,
+      "hi": 2.0,
+      "lam": 1.0,
+      "lo": 0.5,
+      "n0": 8.0,
+      "rho": 0.98
+    },
+    "paper_latent": {
+      "beta": 0.005,
+      "table": "artifacts/semantic-edl-v1/tables/table_SEM_T05.npz",
+      "table_sha256": "5d23129b2cb7aed6a0d2ed768b1a755eac661dae95ddeace89329dc7b56b89d2"
+    }
+  },
+  "diag_every": 100,
+  "experiment": "csr-semantic-lift-expert-learning-v1",
+  "kind": "final",
+  "milestones": {},
+  "model": {
+    "d_model": 384,
+    "dense_ffn": 1792,
+    "expert_ffn": 256,
+    "init_std": 0.02,
+    "n_experts": 32,
+    "n_head": 6,
+    "n_layer": 12,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "router": "linear",
+    "shared_ffn": 768,
+    "teacher": false,
+    "top_k": 4,
+    "vocab_size": 50304
+  },
+  "prereg_sha256": "aebf65f42a88c0050bf4cf1cb53c0e89175bd1a7dca4bbf2a06f181876cbe87c",
+  "run_name": "CHK_RES_C_s100",
+  "seed": 100,
+  "train": {
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "decay_frac": 0.2,
+    "log_every": 1,
+    "lr": 0.0006,
+    "micro_batch_rows": 32,
+    "min_lr": 6e-05,
+    "rows_per_step": 64,
+    "warmup_frac": 0.01,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  }
+}

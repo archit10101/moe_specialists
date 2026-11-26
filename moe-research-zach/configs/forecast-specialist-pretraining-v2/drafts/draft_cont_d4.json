@@ -1,0 +1,30 @@
+{
+  "category": "draft_training",
+  "checkpoint_fracs": [],
+  "data_splits_sha256": "efcde27ee890e9831b8bcd7393ddba66b3ed76ad345ed91e58a72fc10185fcbf",
+  "domain": 4,
+  "experiment": "csr-forecast-specialist-pretraining-v2",
+  "init_from": "runs/20261111T085851Z_fsp_draft_shared/ckpt_final.pt",
+  "kind": "draft_cont",
+  "protocol_sha256": "e65065d8b3755c0a2b7e463449244bbcd4f4f69bd4219cd27f46ecc5b876a0d9",
+  "run_name": "draft_cont_d4",
+  "seed": 0,
+  "train": {
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "decay_frac": 0.2,
+    "log_every": 50,
+    "lr": 0.0005,
+    "micro_batch_rows": 32,
+    "min_lr": 5e-05,
+    "rows_per_step": 64,
+    "slot_every_s": 600,
+    "warmup_frac": 0.01,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  }
+}

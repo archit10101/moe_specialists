@@ -1,0 +1,126 @@
+{
+  "backbone": {
+    "d_model": 384,
+    "dense_ffn": 1792,
+    "expert_ffn": 256,
+    "init_std": 0.02,
+    "n_experts": 32,
+    "n_head": 6,
+    "n_layer": 12,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "shared_ffn": 768,
+    "top_k": 4,
+    "vocab_size": 50304
+  },
+  "budget_tokens": 49000000,
+  "category": "S1",
+  "ccfg": {
+    "alpha_init": -4.6,
+    "alpha_max": 1.0,
+    "alpha_min": 0.2,
+    "chunk": "fixed",
+    "chunk_len": 32,
+    "ctx_dim": 64,
+    "det_theta": 0.0,
+    "enc_hidden": 128,
+    "fc_dim": 64,
+    "horizons": [
+      1
+    ],
+    "inject": "all",
+    "mem_hls": [
+      16.0,
+      128.0,
+      1024.0
+    ],
+    "mem_w": 32,
+    "prior_norm": "match",
+    "shuffle_ctx": false,
+    "teacher": true,
+    "variant": "prior"
+  },
+  "cf_audit_every": 100,
+  "checkpoint_fracs": [
+    1.0
+  ],
+  "cond": {
+    "alpha_l1": 0.0,
+    "c_kl": 1.0,
+    "c_spec": 0.0,
+    "c_util": 1.0,
+    "cf_phases": "all",
+    "ctx_lr_mult": 1.0,
+    "lam_max": 0.9,
+    "name": "CAND",
+    "r_cf": 0.075,
+    "schedule": "40/20/40",
+    "util_mode": "corr"
+  },
+  "condition": "CAND",
+  "end_eval": [
+    "calib_search"
+  ],
+  "experiment": "csr-context-prior-fast-engineering",
+  "gate": {
+    "collapse_max": 0.1,
+    "collapse_min": 0.005,
+    "incumbent": null,
+    "inert_changed": 0.02,
+    "inert_dce": 0.0005,
+    "max_dlm": 0.02,
+    "steps": [
+      318,
+      544
+    ],
+    "t4_metrics": "runs/20261112T034125Z_latent_forecast_router_distill_v1_s1_TOKEN-4_s100/metrics.jsonl",
+    "tok_per_dom": 20000,
+    "window": 150
+  },
+  "kind": "main",
+  "knobs": {
+    "alpha_init": -4.6,
+    "alpha_l1": 0.0,
+    "alpha_max": 1.0,
+    "alpha_min": 0.2,
+    "c_kl": 1.0,
+    "c_spec": 0.0,
+    "c_util": 1.0,
+    "cf_phases": "all",
+    "chunk": "fixed",
+    "chunk_len": 32,
+    "ctx_dim": 64,
+    "ctx_lr_mult": 1.0,
+    "inject": "all",
+    "lam_max": 0.9,
+    "mem_hls": [
+      16.0,
+      128.0,
+      1024.0
+    ],
+    "prior_norm": "match",
+    "r_cf": 0.075,
+    "schedule": "40/20/40",
+    "util_mode": "corr"
+  },
+  "plan_sha256": "3be0ec48c4a5d76db02909ef43ecbb25cabecd7547e2a5d82ddc2bc01393a503",
+  "run_name": "s1_F01_s100",
+  "seed": 100,
+  "train": {
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "decay_frac": 0.2,
+    "log_every": 50,
+    "lr": 0.0006,
+    "micro_batch_rows": 32,
+    "min_lr": 6e-05,
+    "rows_per_step": 64,
+    "warmup_frac": 0.01,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  }
+}

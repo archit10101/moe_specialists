@@ -1,0 +1,15 @@
+#loc = loc("/home/zapan4/moe-research/.cache/inductor/rd/crdtzo56wvw6s6fa3wldxnwi4jlxfxx4i5mv7xcxdyhke3mpisof.py":18:0)
+module {
+  tt.func public @triton_(%arg0: !tt.ptr<f32> {tt.divisibility = 16 : i32} loc("/home/zapan4/moe-research/.cache/inductor/rd/crdtzo56wvw6s6fa3wldxnwi4jlxfxx4i5mv7xcxdyhke3mpisof.py":18:0)) attributes {noinline = false} {
+    %cst = arith.constant dense<0.000000e+00> : tensor<1xf32> loc(#loc1)
+    %c0_i32 = arith.constant 0 : i32 loc(#loc2)
+    %0 = tt.addptr %arg0, %c0_i32 : !tt.ptr<f32>, i32 loc(#loc2)
+    %1 = tt.splat %0 : !tt.ptr<f32> -> tensor<1x!tt.ptr<f32>> loc(#loc2)
+    tt.store %1, %cst : tensor<1x!tt.ptr<f32>> loc(#loc3)
+    tt.return loc(#loc4)
+  } loc(#loc)
+} loc(#loc)
+#loc1 = loc(unknown)
+#loc2 = loc("/home/zapan4/moe-research/.cache/inductor/rd/crdtzo56wvw6s6fa3wldxnwi4jlxfxx4i5mv7xcxdyhke3mpisof.py":24:25)
+#loc3 = loc("/home/zapan4/moe-research/.cache/inductor/rd/crdtzo56wvw6s6fa3wldxnwi4jlxfxx4i5mv7xcxdyhke3mpisof.py":24:64)
+#loc4 = loc("/home/zapan4/moe-research/.cache/inductor/rd/crdtzo56wvw6s6fa3wldxnwi4jlxfxx4i5mv7xcxdyhke3mpisof.py":24:4)

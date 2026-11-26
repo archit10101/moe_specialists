@@ -1,0 +1,14 @@
+{
+  "bank": "SEM2",
+  "fold": 1,
+  "kind": "linear",
+  "macs": 6732,
+  "n_params": 6766,
+  "router_seed": 1,
+  "seconds": 0.14649200439453125,
+  "seed": 1,
+  "sha256": "ebb049459e676e808c6a3a5c1305f96e23e8ad62c92fd401e1d7fad47a5cf314",
+  "time": "2026-11-23T21:23:11-05:00",
+  "tokens": 200000,
+  "train_tokens_unique": 87886
+}

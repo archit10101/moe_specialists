@@ -1,0 +1,57 @@
+{
+  "approved_differing_fields": [
+    "candidate",
+    "description",
+    "family",
+    "role",
+    "routing.allow_test_sizes",
+    "routing.det_kappa",
+    "routing.family",
+    "routing.pool_assign",
+    "routing.pool_dropout",
+    "routing.pool_lb_coeff",
+    "routing.pool_size",
+    "routing.pool_warmup_frac",
+    "routing.refresh_target",
+    "routing.router_lr_mult",
+    "routing.router_temperature",
+    "routing.seg_len",
+    "routing.sel_entropy_coeff",
+    "routing.sel_lr_mult",
+    "routing.sel_temperature",
+    "routing.tau_lr",
+    "run_name"
+  ],
+  "configs": {
+    "G3-A1": {
+      "family": "adaptive",
+      "path": "configs/speculative-pool-routing-v1/gen3/seed99/G3-A1.json",
+      "role": "candidate",
+      "sha256": "8505b4099b0632f71f1bc152579f14cafeb0e5d69e5beaae73db4f547276c11c",
+      "token_budget": 50000000
+    },
+    "G3-A2": {
+      "family": "adaptive",
+      "path": "configs/speculative-pool-routing-v1/gen3/seed99/G3-A2.json",
+      "role": "candidate",
+      "sha256": "5c17be44740359985bea55d82383a91190ea31911a531fe63eb11cd7b3d33088",
+      "token_budget": 50000000
+    },
+    "G3-S1": {
+      "family": "spec",
+      "path": "configs/speculative-pool-routing-v1/gen3/seed99/G3-S1.json",
+      "role": "candidate",
+      "sha256": "97c44b555ffffb2627ba12f01f6c77160d92fc4c4d0c9fd5a4a0f5e62c79c418",
+      "token_budget": 50000000
+    },
+    "TOKEN-4": {
+      "family": "token",
+      "path": "configs/speculative-pool-routing-v1/gen3/seed99/TOKEN-4.json",
+      "role": "baseline",
+      "sha256": "6f8df72c4508725270b5715db825909180574110b0e7f5f28f0d16ff60725470",
+      "token_budget": 50000000
+    }
+  },
+  "created": "2026-11-06T16:37:31-05:00",
+  "matched_check": "passed"
+}

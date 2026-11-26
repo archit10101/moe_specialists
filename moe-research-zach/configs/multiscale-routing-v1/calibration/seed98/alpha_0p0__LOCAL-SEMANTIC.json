@@ -1,0 +1,120 @@
+{
+  "condition": "LOCAL-SEMANTIC",
+  "data": {
+    "dir": "artifacts/data/fwe-rep-v1",
+    "packing": "greedy sequential, block-diagonal doc masks",
+    "seq_len": 1024,
+    "splits_sha256": "c28e98451dec49b8a7731ab0f0dd9ac84cf334f089c0a8ccce796ef740e3a6b9",
+    "train_order_seed": 115
+  },
+  "eval": {
+    "final_full_calib": true,
+    "max_rows": 128,
+    "monitor_splits": [
+      "calib"
+    ],
+    "monitoring_subset": "first 128 packed rows of each monitor split (monitoring only)",
+    "rows_per_batch": 16
+  },
+  "experiment": "csr-multiscale-routing-v1",
+  "init": {
+    "seed": 98,
+    "type": "random"
+  },
+  "model": {
+    "d_model": 192,
+    "dense_ffn": 768,
+    "expert_ffn": 128,
+    "init_std": 0.02,
+    "max_seq_len": 1024,
+    "moe_layers": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "n_experts": 32,
+    "n_head": 8,
+    "n_layer": 8,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "shared_ffn": 256,
+    "tie_embeddings": true,
+    "top_k": 4,
+    "vocab_size": 50304
+  },
+  "prereg_sha256": "5ab16f8ed3e17598a0140fad2e0aaa07fde082cffb6ddd0798123d85acdb4a73",
+  "result_label": "csr-multiscale-routing-v1: calibration (exploratory; causal multiscale context-conditioned token routing)",
+  "routing": {
+    "alpha": 0.0,
+    "beta": 0.0,
+    "broad_ramp": 512,
+    "broad_window": 1024,
+    "center": true,
+    "eps": 1e-06,
+    "gate_norm": "global",
+    "local_max": 16,
+    "mode": "multiscale",
+    "reference": null,
+    "router_bias": false,
+    "scale_control": false,
+    "schedule": [
+      "token",
+      "token",
+      "local",
+      "local",
+      "local",
+      "local",
+      "local"
+    ]
+  },
+  "run_name": "cal_s98_alpha0p0_LOCAL-SEMANTIC",
+  "segmentation": {
+    "cache": "artifacts/segments/8e7edc7e14b3c880",
+    "cache_id": "8e7edc7e14b3c880",
+    "fixed_size": 128,
+    "max_len": 256,
+    "min_len": 64,
+    "random_acceptance": "all prereg criteria on train and calib (first passing seed)",
+    "random_cache": "artifacts/segments_random/0c57f77e51ea3734",
+    "random_cache_id": "0c57f77e51ea3734",
+    "random_generator": "csr-random-hazard-v3",
+    "random_seed": 1,
+    "semantic_tau": 0.35,
+    "strategy": "semantic"
+  },
+  "stage": "calibration",
+  "train": {
+    "accum": 2,
+    "activation_checkpointing": false,
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "compile": false,
+    "decay_frac": 0.2,
+    "dropout": 0.0,
+    "eval_every_tokens": 5000000,
+    "grad_probe_every": 25,
+    "log_every": 25,
+    "lr": 0.0006,
+    "max_seconds": 5400,
+    "micro_batch_rows": 16,
+    "min_lr": 6e-05,
+    "precision": "bf16-autocast",
+    "router_precision": "fp32",
+    "save_checkpoint": false,
+    "seed": 98,
+    "throughput_warmup_steps": 10,
+    "token_budget": 5000000,
+    "warmup_steps": 60,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  },
+  "trainable": "all LM parameters (embedding tied to LM head)"
+}

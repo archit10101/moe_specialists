@@ -1,0 +1,84 @@
+{
+  "bank_milestones": {
+    "m100": 1584,
+    "m150": 2375,
+    "m200": 3167
+  },
+  "budget_tokens": 245000000,
+  "cond": {
+    "banks": [
+      {
+        "alpha": 0.01,
+        "groups": null,
+        "kind": "routed",
+        "name": "B",
+        "r": 0.0,
+        "tau": 0.5
+      },
+      {
+        "alpha": 0.01,
+        "groups": "shuf",
+        "kind": "routed",
+        "name": "C",
+        "r": 0.05,
+        "tau": 0.5
+      },
+      {
+        "alpha": 0.01,
+        "groups": "sem",
+        "kind": "routed",
+        "name": "D",
+        "r": 0.05,
+        "tau": 0.5
+      },
+      {
+        "kind": "oracle",
+        "name": "E"
+      }
+    ],
+    "lam_r": 1.0
+  },
+  "diag_every": 100,
+  "experiment": "joint-semantic-residual-pretrain-v1",
+  "generation": 0,
+  "milestones": {
+    "m50": 793,
+    "p100": 3880
+  },
+  "model": {
+    "d_model": 384,
+    "dense_ffn": 1792,
+    "expert_ffn": 256,
+    "init_std": 0.02,
+    "n_experts": 32,
+    "n_head": 6,
+    "n_layer": 12,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "router": "linear",
+    "shared_ffn": 768,
+    "teacher": false,
+    "top_k": 4,
+    "vocab_size": 50304
+  },
+  "prereg_sha256": "c4fa3eccc92cc4a587e274d99319e8e2f6e58bc0f89130c985fd40ab5d5e463f",
+  "run_name": "F_r0.05_t0.5_a0.01_s1",
+  "seed": 1,
+  "train": {
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "decay_frac": 0.2,
+    "log_every": 50,
+    "lr": 0.0006,
+    "micro_batch_rows": 32,
+    "min_lr": 6e-05,
+    "rows_per_step": 64,
+    "warmup_frac": 0.01,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  }
+}

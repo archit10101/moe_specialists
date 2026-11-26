@@ -1,0 +1,57 @@
+{
+  "approved_differing_fields": [
+    "candidate",
+    "description",
+    "family",
+    "routing.bd_coeff",
+    "routing.boundary_source",
+    "routing.cp_long",
+    "routing.cp_min_long",
+    "routing.cp_short",
+    "routing.ema_decay",
+    "routing.gru_hidden",
+    "routing.lb_weighting",
+    "routing.lbd_horizon",
+    "routing.max_len",
+    "routing.min_len",
+    "routing.mode",
+    "routing.opening",
+    "routing.seg",
+    "routing.seg_len",
+    "routing.state",
+    "routing.summary",
+    "routing.target_len",
+    "routing.tau_lr",
+    "routing.temperature",
+    "run_name"
+  ],
+  "configs": {
+    "G3-D3": {
+      "family": "dynamic",
+      "path": "configs/sequence-routing-search-v1/gen3/seed99/G3-D3.json",
+      "sha256": "6daf5c900570cd64283b394751e7e804c9431a9f0cb50cebc7f3c03dc201fefa"
+    },
+    "G3-D4": {
+      "family": "dynamic",
+      "path": "configs/sequence-routing-search-v1/gen3/seed99/G3-D4.json",
+      "sha256": "44e252603ced0b7bac4fb1a86ec752b62e1db30a24f353d6d6f69e2086f89038"
+    },
+    "G3-F2": {
+      "family": "fixed",
+      "path": "configs/sequence-routing-search-v1/gen3/seed99/G3-F2.json",
+      "sha256": "5b6b37fa9798a557ced4e75e928afc937f3494813f22734ad8d91cda44737b8e"
+    },
+    "G3-F4": {
+      "family": "fixed",
+      "path": "configs/sequence-routing-search-v1/gen3/seed99/G3-F4.json",
+      "sha256": "b15bc951f8abf498d17f48ca5e690cc6c2f778b043f7001beb70903e1315ccc7"
+    },
+    "TOKEN-4": {
+      "family": "token",
+      "path": "configs/sequence-routing-search-v1/gen3/seed99/TOKEN-4.json",
+      "sha256": "cc12f695543232e84da9f0e604c0ee5e8dcf2a7f40f70653b4e440ad1aca5519"
+    }
+  },
+  "created": "2026-11-06T02:57:23-05:00",
+  "matched_check": "passed"
+}

@@ -1,0 +1,75 @@
+{
+  "approved_differing_fields": [
+    "attention.cf_frac",
+    "attention.force",
+    "attention.gate_hidden",
+    "attention.kind",
+    "attention.n_full_late",
+    "attention.target_rate",
+    "attention.thr_ema",
+    "attention.window",
+    "candidate",
+    "condition",
+    "role",
+    "run_name"
+  ],
+  "configs": {
+    "FULL-TOKEN-4": {
+      "path": "configs/conditional-local-attention-v1/gen1/seed98/FULL-TOKEN-4.json",
+      "sha256": "6938c02cbef97b46b852bf9a344f801517e12f00ea71c32b49bce31886a26fc0",
+      "token_budget": 5000000
+    },
+    "G128-25": {
+      "path": "configs/conditional-local-attention-v1/gen1/seed98/G128-25.json",
+      "sha256": "9282e94cf0892e0a264c61f3f07c6716def2a8b61d54160da0f43e3d97981dd0",
+      "token_budget": 5000000
+    },
+    "G256-10": {
+      "path": "configs/conditional-local-attention-v1/gen1/seed98/G256-10.json",
+      "sha256": "e909c81f3ea4049fcac24e19432371951ae7a4044b4409f23311a41331c411e6",
+      "token_budget": 5000000
+    },
+    "G256-25": {
+      "path": "configs/conditional-local-attention-v1/gen1/seed98/G256-25.json",
+      "sha256": "fbb3b1d80b530d60e4f9e96c340f7e20925f1df1c688ff7c0252c03b5172c895",
+      "token_budget": 5000000
+    },
+    "G256-50": {
+      "path": "configs/conditional-local-attention-v1/gen1/seed98/G256-50.json",
+      "sha256": "31942340ff83c92e6824e47340664415019ec054087a77356e138312e3a6583a",
+      "token_budget": 5000000
+    },
+    "G512-25": {
+      "path": "configs/conditional-local-attention-v1/gen1/seed98/G512-25.json",
+      "sha256": "7899aebc874447476e6c2a6ab42bafed0a72b0a9a1d9c72e8ea4c0c17cc90b26",
+      "token_budget": 5000000
+    },
+    "HYBRID-W256-LATE2": {
+      "path": "configs/conditional-local-attention-v1/gen1/seed98/HYBRID-W256-LATE2.json",
+      "sha256": "6c3897157c9cb7a324834d945be62261454d5f165ad7ebefd56e4982baa9992d",
+      "token_budget": 5000000
+    },
+    "HYBRID-W256-LATE4": {
+      "path": "configs/conditional-local-attention-v1/gen1/seed98/HYBRID-W256-LATE4.json",
+      "sha256": "812b0ad9d9ae52e1b3e7e6523e05b4d8d4583a42a46d899591c6f804879326ff",
+      "token_budget": 5000000
+    },
+    "LOCAL-W128": {
+      "path": "configs/conditional-local-attention-v1/gen1/seed98/LOCAL-W128.json",
+      "sha256": "7253edfb973534b6f0713fab7ab7848d2245fbe12a4f697db8b9efb2c86ea8e9",
+      "token_budget": 5000000
+    },
+    "LOCAL-W256": {
+      "path": "configs/conditional-local-attention-v1/gen1/seed98/LOCAL-W256.json",
+      "sha256": "6505597cb6ac22db22b9c6a2cd80c764a5f7d7e9e20d34648fbfdfa99f40445b",
+      "token_budget": 5000000
+    },
+    "LOCAL-W512": {
+      "path": "configs/conditional-local-attention-v1/gen1/seed98/LOCAL-W512.json",
+      "sha256": "6a545766e835c33955aec4e8945f33ef58f1d65d5cd11b64c5ae2e81756aabae",
+      "token_budget": 5000000
+    }
+  },
+  "created": "2026-11-08T02:51:22-05:00",
+  "matched_check": "passed"
+}

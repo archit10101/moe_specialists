@@ -1,0 +1,4 @@
+# Stage B CUDA environment: requirements-cpu.txt with torch replaced by the official CUDA 12.4 build.
+--index-url https://download.pytorch.org/whl/cu124
+torch==2.5.1+cu124
+# exact resolved set: requirements-cuda.lock.txt

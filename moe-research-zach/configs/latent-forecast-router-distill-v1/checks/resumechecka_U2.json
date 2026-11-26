@@ -1,0 +1,75 @@
+{
+  "budget_tokens": 1890000,
+  "cache_manifest_sha256": "928dde01633543d35b5044ae10acb16e63476c5f489687b3e8571bf0f902c7e7",
+  "candidate": null,
+  "category": "checks_and_tests",
+  "cf_audit_every": 5,
+  "checkpoint_fracs": [
+    1.0
+  ],
+  "cond": {
+    "c_kl": 1.0,
+    "c_lc": 0.05,
+    "c_sutil": 0.3,
+    "c_util": 1.0,
+    "cf": true,
+    "name": "CF-FORECAST-STUDENT",
+    "r_cf": 0.075,
+    "router_lr_mult": 1.0,
+    "schedule": "40/20/40",
+    "util_mode": "rank"
+  },
+  "condition": "CF-FORECAST-STUDENT",
+  "diag": null,
+  "end_eval": [],
+  "experiment": "csr-latent-forecast-router-distill-v1",
+  "kind": "main",
+  "model": {
+    "agg": "deepsets",
+    "d_model": 384,
+    "dense_ffn": 1792,
+    "expert_ffn": 256,
+    "fc_dim": 64,
+    "horizons": [
+      1,
+      4,
+      8
+    ],
+    "init_std": 0.02,
+    "inject": "all",
+    "kappa": 0.0,
+    "mem": "ema",
+    "mem_halflife": 128.0,
+    "n_experts": 32,
+    "n_head": 6,
+    "n_layer": 12,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "router": "student",
+    "shared_ffn": 768,
+    "tau_t": 1.0,
+    "teacher": true,
+    "top_k": 4,
+    "vocab_size": 50304
+  },
+  "protocol_sha256": "fe99b29e8fe1454894f984c8887df194244173adcdbe2f353b6d9fd56ac54d98",
+  "run_name": "resumechecka_U2",
+  "seed": 100,
+  "train": {
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "decay_frac": 0.2,
+    "log_every": 50,
+    "lr": 0.0006,
+    "micro_batch_rows": 32,
+    "min_lr": 6e-05,
+    "rows_per_step": 64,
+    "warmup_frac": 0.01,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  }
+}

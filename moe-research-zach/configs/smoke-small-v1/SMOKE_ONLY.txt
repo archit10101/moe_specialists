@@ -1,0 +1,2 @@
+ENGINEERING SMOKE TEST ONLY - small model, not experimental evidence
+Full-size experiment design: configs/v2 (frozen).

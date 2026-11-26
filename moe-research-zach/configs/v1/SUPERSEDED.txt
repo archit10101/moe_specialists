@@ -1,0 +1,1 @@
+SUPERSEDED 2026-10-31: condition F in these configs points at the invalid F-v1 random tables (double document-end censoring). train.py refuses them. Use configs/v2.

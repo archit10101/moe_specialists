@@ -1,0 +1,107 @@
+{
+  "data": {
+    "dir": "artifacts/data/fwe-rep-v1",
+    "packing": "greedy sequential, block-diagonal doc masks",
+    "seq_len": 1024,
+    "splits_sha256": "c28e98451dec49b8a7731ab0f0dd9ac84cf334f089c0a8ccce796ef740e3a6b9",
+    "train_order_seed": 17
+  },
+  "eval": {
+    "max_rows": 128,
+    "monitoring_subset": "first 128 packed validation rows, natural order (monitoring only)",
+    "rows_per_batch": 16,
+    "split": "val"
+  },
+  "experiment": "csr-representative-v1",
+  "init": {
+    "seed": 0,
+    "type": "random"
+  },
+  "model": {
+    "d_model": 192,
+    "dense_ffn": 768,
+    "expert_ffn": 128,
+    "init_std": 0.02,
+    "max_seq_len": 1024,
+    "moe_layers": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "n_experts": 32,
+    "n_head": 8,
+    "n_layer": 8,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "shared_ffn": 256,
+    "tie_embeddings": true,
+    "top_k": 4,
+    "vocab_size": 50304
+  },
+  "prereg_sha256": "d2ace8020820fa1d40ab5f2c245c9511451d1b75ae048ddd2f1270e05e45528e",
+  "result_label": "csr-representative-v1: three-seed, 100M-token, ~29M-parameter prospective follow-up (not a confirmation)",
+  "routing": {
+    "gate_norm": "global",
+    "mode": "token",
+    "pool_size": 8,
+    "warmup": 16
+  },
+  "segmentation": {
+    "cache": "artifacts/segments/8e7edc7e14b3c880",
+    "cache_id": "8e7edc7e14b3c880",
+    "fixed_size": 128,
+    "max_len": 256,
+    "min_len": 64,
+    "random_acceptance": "all prereg criteria on train and calib (first passing seed)",
+    "random_cache": "artifacts/segments_random/0c57f77e51ea3734",
+    "random_cache_id": "0c57f77e51ea3734",
+    "random_generator": "csr-random-hazard-v3",
+    "random_seed": 1,
+    "semantic_tau": 0.35,
+    "strategy": "none"
+  },
+  "semantic": {
+    "comparison_set": "all valid de-duplicated chunks of the micro-batch (complete w-prefix), evenly-spaced subsample to n_max; multiple documents per micro-batch",
+    "enabled": false,
+    "lambda": 0.0003,
+    "min_chunks": 16,
+    "n_max": 256,
+    "tau_r": 3.0516264426457822e-05,
+    "tau_s": 0.05660378126976661
+  },
+  "train": {
+    "accum": 2,
+    "activation_checkpointing": false,
+    "aux_coeff": 0.01,
+    "aux_scope": "per micro-batch, per MoE layer, summed over layers, non-pad tokens",
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "compile": false,
+    "decay_frac": 0.2,
+    "dropout": 0.0,
+    "eval_every_tokens": 5000000,
+    "grad_probe_every": 25,
+    "log_every": 25,
+    "lr": 0.0006,
+    "max_seconds": 5400,
+    "micro_batch_rows": 16,
+    "min_lr": 6e-05,
+    "precision": "bf16-autocast",
+    "router_precision": "fp32",
+    "save_checkpoint": true,
+    "seed": 0,
+    "throughput_warmup_steps": 10,
+    "token_budget": 100000000,
+    "warmup_steps": 60,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  },
+  "trainable": "all LM parameters (embedding tied to LM head)"
+}

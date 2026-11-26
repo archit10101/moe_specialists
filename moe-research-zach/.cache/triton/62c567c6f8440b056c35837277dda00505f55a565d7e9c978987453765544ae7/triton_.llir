@@ -1,0 +1,98 @@
+; ModuleID = 'LLVMDialectModule'
+source_filename = "LLVMDialectModule"
+
+define void @triton_(ptr addrspace(1) %0, ptr addrspace(1) %1, i32 %2) local_unnamed_addr !dbg !7 {
+  %4 = tail call i32 asm "mov.u32 $0, %ctaid.x;", "=r"() #1, !dbg !10
+  %5 = shl i32 %4, 10, !dbg !11
+  %6 = tail call i32 @llvm.nvvm.read.ptx.sreg.tid.x(), !dbg !12
+  %7 = shl i32 %6, 3, !dbg !12
+  %8 = and i32 %7, 1016, !dbg !12
+  %9 = or disjoint i32 %5, %8, !dbg !13
+  %10 = sext i32 %9 to i64, !dbg !14
+  %11 = getelementptr i1, ptr addrspace(1) %0, i64 %10, !dbg !14
+  %12 = tail call { i32, i32 } asm sideeffect "mov.u32 $0, 0x0;\0A\09mov.u32 $1, 0x0;\0A\09@$3 ld.global.v2.b32 { $0, $1 }, [ $2 + 0 ];", "=r,=r,l,b"(ptr addrspace(1) %11, i1 true) #1, !dbg !15
+  %13 = extractvalue { i32, i32 } %12, 0, !dbg !15
+  %14 = bitcast i32 %13 to <4 x i8>, !dbg !15
+  %15 = extractvalue { i32, i32 } %12, 1, !dbg !15
+  %16 = bitcast i32 %15 to <4 x i8>, !dbg !15
+  %17 = trunc i32 %13 to i8, !dbg !15
+  %18 = extractelement <4 x i8> %14, i64 1, !dbg !15
+  %19 = extractelement <4 x i8> %14, i64 2, !dbg !15
+  %20 = extractelement <4 x i8> %14, i64 3, !dbg !15
+  %21 = trunc i32 %15 to i8, !dbg !15
+  %22 = extractelement <4 x i8> %16, i64 1, !dbg !15
+  %23 = extractelement <4 x i8> %16, i64 2, !dbg !15
+  %24 = extractelement <4 x i8> %16, i64 3, !dbg !15
+  %.not = icmp eq i8 %17, 0, !dbg !16
+  %.not1 = icmp eq i8 %18, 0, !dbg !16
+  %.not2 = icmp eq i8 %19, 0, !dbg !16
+  %.not3 = icmp eq i8 %20, 0, !dbg !16
+  %.not4 = icmp eq i8 %21, 0, !dbg !16
+  %.not5 = icmp eq i8 %22, 0, !dbg !16
+  %.not6 = icmp eq i8 %23, 0, !dbg !16
+  %.not7 = icmp eq i8 %24, 0, !dbg !16
+  %25 = select i1 %.not, float 0xFFF0000000000000, float 0.000000e+00, !dbg !17
+  %26 = select i1 %.not1, float 0xFFF0000000000000, float 0.000000e+00, !dbg !17
+  %27 = select i1 %.not2, float 0xFFF0000000000000, float 0.000000e+00, !dbg !17
+  %28 = select i1 %.not3, float 0xFFF0000000000000, float 0.000000e+00, !dbg !17
+  %29 = select i1 %.not4, float 0xFFF0000000000000, float 0.000000e+00, !dbg !17
+  %30 = select i1 %.not5, float 0xFFF0000000000000, float 0.000000e+00, !dbg !17
+  %31 = select i1 %.not6, float 0xFFF0000000000000, float 0.000000e+00, !dbg !17
+  %32 = select i1 %.not7, float 0xFFF0000000000000, float 0.000000e+00, !dbg !17
+  %33 = getelementptr i16, ptr addrspace(1) %1, i64 %10, !dbg !18
+  %34 = tail call i16 asm "cvt.rn.bf16.f32 $0, $1;", "=h,r"(float %25) #1, !dbg !19
+  %35 = tail call i16 asm "cvt.rn.bf16.f32 $0, $1;", "=h,r"(float %26) #1, !dbg !19
+  %36 = tail call i16 asm "cvt.rn.bf16.f32 $0, $1;", "=h,r"(float %27) #1, !dbg !19
+  %37 = tail call i16 asm "cvt.rn.bf16.f32 $0, $1;", "=h,r"(float %28) #1, !dbg !19
+  %38 = tail call i16 asm "cvt.rn.bf16.f32 $0, $1;", "=h,r"(float %29) #1, !dbg !19
+  %39 = tail call i16 asm "cvt.rn.bf16.f32 $0, $1;", "=h,r"(float %30) #1, !dbg !19
+  %40 = tail call i16 asm "cvt.rn.bf16.f32 $0, $1;", "=h,r"(float %31) #1, !dbg !19
+  %41 = tail call i16 asm "cvt.rn.bf16.f32 $0, $1;", "=h,r"(float %32) #1, !dbg !19
+  %42 = insertelement <2 x i16> poison, i16 %34, i64 0, !dbg !19
+  %43 = insertelement <2 x i16> %42, i16 %35, i64 1, !dbg !19
+  %44 = bitcast <2 x i16> %43 to i32, !dbg !19
+  %45 = insertelement <2 x i16> poison, i16 %36, i64 0, !dbg !19
+  %46 = insertelement <2 x i16> %45, i16 %37, i64 1, !dbg !19
+  %47 = bitcast <2 x i16> %46 to i32, !dbg !19
+  %48 = insertelement <2 x i16> poison, i16 %38, i64 0, !dbg !19
+  %49 = insertelement <2 x i16> %48, i16 %39, i64 1, !dbg !19
+  %50 = bitcast <2 x i16> %49 to i32, !dbg !19
+  %51 = insertelement <2 x i16> poison, i16 %40, i64 0, !dbg !19
+  %52 = insertelement <2 x i16> %51, i16 %41, i64 1, !dbg !19
+  %53 = bitcast <2 x i16> %52 to i32, !dbg !19
+  tail call void asm sideeffect "@$5 st.global.v4.b32 [ $4 + 0 ], { $0, $1, $2, $3 };", "r,r,r,r,l,b"(i32 %44, i32 %47, i32 %50, i32 %53, ptr addrspace(1) %33, i1 true) #1, !dbg !19
+  ret void, !dbg !20
+}
+
+; Function Attrs: mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none)
+declare noundef i32 @llvm.nvvm.read.ptx.sreg.tid.x() #0
+
+attributes #0 = { mustprogress nocallback nofree nosync nounwind speculatable willreturn memory(none) }
+attributes #1 = { nounwind }
+
+!llvm.module.flags = !{!0, !1}
+!llvm.dbg.cu = !{!2}
+!nvvm.annotations = !{!4, !5}
+!llvm.ident = !{!6}
+
+!0 = !{i32 2, !"Debug Info Version", i32 3}
+!1 = !{i32 4, !"nvvm-reflect-ftz", i32 1}
+!2 = distinct !DICompileUnit(language: DW_LANG_C, file: !3, producer: "triton", isOptimized: true, runtimeVersion: 0, emissionKind: LineTablesOnly)
+!3 = !DIFile(filename: "cb5gfeckjfsev27ptupxmjmn7o2gopa3h535pp7j6wcg5togyedz.py", directory: "/home/zapan4/moe-research/.cache/inductor/b5")
+!4 = !{ptr @triton_, !"kernel", i32 1}
+!5 = !{ptr @triton_, !"maxntidx", i32 128}
+!6 = !{!"clang version 3.8.0 (tags/RELEASE_380/final)"}
+!7 = distinct !DISubprogram(name: "triton_", linkageName: "triton_", scope: !3, file: !3, line: 18, type: !8, scopeLine: 18, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !2)
+!8 = !DISubroutineType(cc: DW_CC_normal, types: !9)
+!9 = !{}
+!10 = !DILocation(line: 20, column: 28, scope: !7)
+!11 = !DILocation(line: 20, column: 33, scope: !7)
+!12 = !DILocation(line: 21, column: 36, scope: !7)
+!13 = !DILocation(line: 21, column: 23, scope: !7)
+!14 = !DILocation(line: 24, column: 30, scope: !7)
+!15 = !DILocation(line: 24, column: 35, scope: !7)
+!16 = !DILocation(line: 24, column: 44, scope: !7)
+!17 = !DILocation(line: 28, column: 32, scope: !7)
+!18 = !DILocation(line: 29, column: 25, scope: !7)
+!19 = !DILocation(line: 29, column: 36, scope: !7)
+!20 = !DILocation(line: 29, column: 4, scope: !7)

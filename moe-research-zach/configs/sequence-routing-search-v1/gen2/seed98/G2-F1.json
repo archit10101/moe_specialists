@@ -1,0 +1,108 @@
+{
+  "candidate": "G2-F1",
+  "data": {
+    "dir": "artifacts/data/fwe-rep-v1",
+    "packing": "greedy sequential, block-diagonal doc masks",
+    "seq_len": 1024,
+    "splits_sha256": "c28e98451dec49b8a7731ab0f0dd9ac84cf334f089c0a8ccce796ef740e3a6b9",
+    "train_order_seed": 115
+  },
+  "description": "carry (best)",
+  "eval": {
+    "final_calib_search": true,
+    "max_rows": 128,
+    "monitoring_subset": "first 128 packed rows of CALIB-SEARCH (monitoring only)",
+    "rows_per_batch": 16
+  },
+  "experiment": "csr-sequence-routing-search-v1",
+  "family": "fixed",
+  "init": {
+    "seed": 98,
+    "type": "random"
+  },
+  "model": {
+    "d_model": 192,
+    "dense_ffn": 768,
+    "expert_ffn": 128,
+    "init_std": 0.02,
+    "max_seq_len": 1024,
+    "moe_layers": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "n_experts": 32,
+    "n_head": 8,
+    "n_layer": 8,
+    "norm_eps": 1e-06,
+    "rope_base": 10000.0,
+    "shared_ffn": 256,
+    "tie_embeddings": true,
+    "top_k": 4,
+    "vocab_size": 50304
+  },
+  "prereg_sha256": "7cc213b88f213d3bdc5d3fbe4c49e1b0e5bcda027c60c57f14efc5cf23e5794d",
+  "result_label": "csr-sequence-routing-search-v1: gen2",
+  "routing": {
+    "bd_coeff": 1.0,
+    "boundary_source": "layer",
+    "cp_long": 32,
+    "cp_min_long": 8,
+    "cp_short": 8,
+    "ema_decay": 0.5,
+    "gru_hidden": 32,
+    "lb_weighting": "token",
+    "lbd_horizon": 16,
+    "max_len": 256,
+    "min_len": 16,
+    "mode": "sequence",
+    "opening": 0,
+    "seg": "fixed",
+    "seg_len": 16,
+    "state": "none",
+    "summary": "mean",
+    "target_len": 64,
+    "tau_lr": 0.2,
+    "temperature": 1.0
+  },
+  "run_name": "gen2_s98_G2-F1",
+  "segmentation": {
+    "note": "sequence segmentation is computed inside the model (seqroute.py); no cache used"
+  },
+  "stage": "gen2",
+  "train": {
+    "accum": 2,
+    "activation_checkpointing": false,
+    "aux_coeff": 0.01,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "clip": 1.0,
+    "compile": false,
+    "decay_frac": 0.2,
+    "dropout": 0.0,
+    "eval_every_tokens": 5000000,
+    "grad_probe_every": 0,
+    "log_every": 25,
+    "lr": 0.0006,
+    "max_seconds": 5400,
+    "micro_batch_rows": 16,
+    "min_lr": 6e-05,
+    "precision": "bf16-autocast",
+    "router_precision": "fp32",
+    "save_checkpoint": false,
+    "seed": 98,
+    "state_every_seconds": 0,
+    "throughput_warmup_steps": 10,
+    "token_budget": 10000000,
+    "warmup_steps": 60,
+    "weight_decay": 0.1,
+    "z_coeff": 0.001
+  },
+  "trainable": "all LM parameters (embedding tied to LM head)"
+}
