@@ -63,13 +63,14 @@ Legend:
 
 | item | value | status |
 |---|---|---|
-| frozen base | `base.token4` seed s for bank seed s (`base_seed=-1`), final checkpoint | original |
+| frozen base | `base.token4` **seed 0 for every bank seed** (final checkpoint; B4 uses its 10/25/50% checkpoints). B8 puts bank seed 0 on TOKEN-4 seeds 1–3 | **differs**: the original put bank seed s on TOKEN-4 seed s. Changed for the paper tiers, which train one base to save GPU time. A bank seed therefore measures bank-training variance only (init + data order), and base-to-base variance is tested separately by B8. `base_seed=-1` restores the original pairing |
 | placement / form | `h' = h + a_e(RMSNorm(h))` after the final block, before the final norm; RMSNorm without weight | original |
 | specialist | 16 × (384→256→384), exact GELU, no bias = 3,145,728 params; W1 ~ N(0, 0.02²), W2 = 0 so every bank starts at the base | original (tanh-GELU there, a negligible difference) |
 | semantic oracle | the paper's hard `sem` label (argmax q, see Clusters), whole-paper | original |
 | shuffled oracle | `sem_shuf` (see shuffled) | original |
 | token router (C / G) | linear on RMSNorm(h) → top-1, gate scale p/p.detach(), Switch balance 0.01, no capacity limit | original |
-| training | 50M bank-split tokens the base never saw; 32×1,024 tokens per step (~1,526 steps); AdamW (0.9, 0.95), **lr 3e-4, 50-step warmup then constant, wd 0.1**; the same data order for every seed and condition | original (`orv1_paths.py`) |
+| training | 50M bank-split tokens the base never saw; 32×1,024 tokens per step (~1,526 steps); AdamW (0.9, 0.95), **lr 3e-4, 50-step warmup then constant, wd 0.1** | original (`orv1_paths.py`) |
+| data order | identical rows for every condition (sem / shuf / tok / dense) within a seed; a different order per seed (`stream_seed=-1` → 1000 + seed) | **differs**: the original used one order for every seed. With a single base, a fixed order would leave the bank initialisation as the only source of seed variance, which understates the uncertainty. `stream_seed=1000` restores one order |
 | specificity | double-centred diagonal of the forced swap matrix (≈0.94× the original's for K = 16); hierarchical bootstrap over papers within clusters | **differs**: the original's `functional()` compared own-cluster vs other-cluster tokens inside 675 strata. Compare signs and the semantic − shuffled contrast |
 
 ## Router (§27)

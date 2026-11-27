@@ -15,7 +15,7 @@ import time
 
 import torch
 
-from ..config import BankCfg, Experiment, Profile, bank_base_seed, bank_cfg, get_experiment, to_dict
+from ..config import BankCfg, Experiment, Profile, bank_base_seed, bank_cfg, bank_stream_seed, get_experiment, to_dict
 from ..data.loader import GroupTable, Split, TrainStream, to_device
 from ..model.moe import token_ce
 from ..model.residual import Bank, TokenRouter
@@ -74,7 +74,7 @@ def train_bank(p: Profile, exp: Experiment, seed: int) -> None:
 
     accum = max(1, bc.batch_tokens // (tc.micro_bs * mc.ctx))
     total = math.ceil(bc.tokens / (accum * tc.micro_bs * mc.ctx))
-    stream = TrainStream(Split(p, "bank"), bc.stream_seed, tc.micro_bs, accum)
+    stream = TrainStream(Split(p, "bank"), bank_stream_seed(bc, seed), tc.micro_bs, accum)
     opt = make_optimizer(bm.parameters(), bc.lr, bc.weight_decay, dev)
     ckpt = rd / "ckpt_last.pt"
     step, extra = 0, dict(log=[])

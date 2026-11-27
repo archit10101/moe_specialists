@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .config import EXPERIMENTS, Profile, bank_base_seed, bank_cfg, get_experiment, router_cfg, runnable
+from .config import EXPERIMENTS, Profile, bank_base_seed, bank_cfg, get_experiment, router_cfg, runnable, seeds_for
 from .utils import data_dir, groups_dir, is_done, run_dir
 
 # per-job SLURM time limits (HH:MM:SS); the bench numbers in docs/ORCD.md explain them
@@ -97,11 +97,12 @@ def build_graph(p: Profile, tier: str = "core", only: list[str] | None = None) -
         if only:
             if exp.name not in only:
                 continue
-        elif tier != "all" and exp.tier != tier:
+            seeds = exp.seeds
+        else:
+            seeds = seeds_for(exp, tier)
+        if not seeds or not runnable(p, exp):
             continue
-        if not runnable(p, exp):
-            continue
-        for s in exp.seeds:
+        for s in seeds:
             need(exp.name, s)
     add(Job("report", "report", deps=[k for k in order if k not in ("prepare", "cluster")]))
     return [jobs[k] for k in order]

@@ -3,6 +3,7 @@
 #
 #   ./slurm/launch.sh                  setup + smoke test + core reproduction
 #   ./slurm/launch.sh --tier all       ... + the ablations
+#   ./slurm/launch.sh --tier paper     the §23/§27 paper runs only (later: ./slurm/submit_all.sh --tier paper_extra)
 #   ./slurm/launch.sh --foreground     same, but stay attached (default: detach and log to a file)
 #   ./slurm/launch.sh --dry-run        skip setup, print the sbatch commands, submit nothing
 #
@@ -29,7 +30,7 @@ while [ $# -gt 0 ]; do
     --tier) shift; TIER="$1" ;;
     --foreground) FG=1 ;;
     --dry-run) DRY=1; FG=1 ;;
-    -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
   shift
@@ -83,7 +84,7 @@ gate_state() {          # PENDING / RUNNING / COMPLETED / FAILED / CANCELLED ...
 }
 
 step "2/4 smoke pipeline"
-submit_until_done --smoke
+submit_until_done --smoke --tier "$TIER"      # smoke-test the same job graph the real run will use
 # the smoke report job runs after every other smoke job (afterany), so the gate follows it
 report_id="$(echo "$OUT" | awk '$1 == "report" && $2 == "submitted" { print $3 } $1 == "report" && $2 == "already" { gsub(/[()]/, "", $4); print $4 }' | head -1)"
 [ -n "$report_id" ] || { echo "ERROR: could not find the smoke report job id in the output above" >&2; exit 1; }
@@ -96,7 +97,7 @@ if [ -n "$gate_id" ]; then
 else
   gate_flags=( -J "${JOB_PREFIX}smoke_gate" -t 00:20:00 -p "$CPU_PARTITION" -c 1 --mem=4G
                -o "$LOGS/%x_%j.out" --chdir="$REPRO_ROOT"
-               --export="ALL,REPRO_ROOT=$REPRO_ROOT,REPRO_WORK=$REPRO_WORK"
+               --export="ALL,REPRO_ROOT=$REPRO_ROOT,REPRO_WORK=$REPRO_WORK,GATE_TIER=$TIER"
                --dependency="afterany:$report_id" )
   [ -n "$SLURM_ACCOUNT" ] && gate_flags+=( -A "$SLURM_ACCOUNT" )
   [ -n "$MAIL_USER" ] && gate_flags+=( --mail-user="$MAIL_USER" --mail-type=FAIL )

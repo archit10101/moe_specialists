@@ -186,12 +186,53 @@ def test_lr_schedules():
     assert lr_at(10, 100, 1.0, 0.1, 0.0, "constant", warmup_steps=5) == 1.0
 
 
-def test_bank_seed_uses_the_same_base_seed():
+def _keys(tier):
     from repro.config import FULL as P
-    jobs = {j.key: j for j in build_graph(P, "core")}
+    return {j.key for j in build_graph(P, tier)}
+
+
+def test_paper_tier_runs_exactly_the_requested_jobs():
+    k = _keys("paper")
+    bases = {x for x in k if x.startswith("base:")}
+    assert bases == {"base:base.token4:s0"}                              # no EDL family, token4 seed 0 only
+    want = {f"bank:bank.{r}:s{s}" for r in ("sem", "shuf", "tok") for s in range(4)}
+    want |= {f"bank:abl.bank_{r}_at{f}:s{s}" for r in ("sem", "shuf", "tok") for f in (10, 25, 50) for s in range(4)}
+    want |= {f"bank:abl.bank_dense_{m}:s{s}" for m in ("compute", "params") for s in range(4)}
+    want |= {f"router:router.{r}:s{s}" for r in ("sem", "shuf") for s in range(3)}
+    want |= {f"router:abl.router_{r}_bank{b}:s0" for r in ("sem", "shuf") for b in (1, 2, 3)}
+    assert {x for x in k if x.split(":")[0] in ("bank", "router")} == want
+    assert {x for x in k if ":" not in x} == {"prepare", "cluster", "report"}
+    assert len(k) == 72
+
+
+def test_paper_extra_adds_only_the_extras_and_reuses_paper_jobs():
+    paper, extra = _keys("paper"), _keys("paper_extra")
+    new = extra - paper
+    want = {f"base:base.token4:s{s}" for s in (1, 2, 3)}
+    want |= {f"bank:abl.bank_{r}_base{b}:s0" for r in ("sem", "shuf", "tok") for b in (1, 2, 3)}
+    want |= {"bank:abl.bank_domain:s0", "bank:abl.bank_domain:s1",
+             "router:abl.router_token_only:s0", "router:abl.router_ctx_only:s0"}
+    assert new == want
+    # everything else it lists is a dependency that the paper tier already produces (same job key = same run dir)
+    assert extra & paper == {"prepare", "cluster", "report", "base:base.token4:s0",
+                             "bank:bank.sem:s0", "bank:bank.tok:s0"}
+
+
+def test_seeds_for_tiers():
+    from repro.config import get_experiment, seeds_for
+    t4 = get_experiment("base.token4")
+    assert seeds_for(t4, "paper") == (0,) and seeds_for(t4, "paper_extra") == (1, 2, 3)
+    assert seeds_for(t4, "core") == (0, 1, 2, 3) and seeds_for(t4, "all") == (0, 1, 2, 3)
+    assert seeds_for(get_experiment("base.edl"), "paper") == ()
+    assert seeds_for(get_experiment("abl.bank_sem_k8"), "paper") == ()     # B5 stays out
+
+
+def test_banks_sit_on_token4_seed0_except_b8():
+    from repro.config import FULL as P
+    jobs = {j.key: j for j in build_graph(P, "all")}
     for s in range(4):
-        for r in ("sem", "shuf", "tok"):
-            assert f"base:base.token4:s{s}" in jobs[f"bank:bank.{r}:s{s}"].deps
+        assert "base:base.token4:s0" in jobs[f"bank:bank.sem:s{s}"].deps
+    assert "base:base.token4:s2" in jobs["bank:abl.bank_tok_base2:s0"].deps
 
 
 def test_router_trains_on_papers_nothing_else_saw():

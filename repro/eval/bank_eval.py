@@ -14,7 +14,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from ..config import Experiment, Profile
+from ..config import Experiment, Profile, bank_base_seed
 from ..data.loader import GroupTable, Split, eval_windows, to_device
 from ..model.moe import token_ce
 from ..train.residual import load_bank
@@ -52,8 +52,10 @@ def evaluate_bank(p: Profile, exp: Experiment, seed: int) -> dict:
     v = bank_pass(base, bm, val, eval_windows(val, p.eval.val_tokens), p.eval.batch)
     gain = v["base_ce"] - v["bank_ce"]
     res = dict(experiment=exp.name, seed=seed, routing=bc.routing, groups=bc.groups, n_spec=bm.bank.n,
+               base=bc.base, base_seed=bank_base_seed(bc, seed), base_ckpt=bc.base_ckpt,
                hidden=bm.bank.hidden, params=sum(q.numel() for q in bm.bank.parameters()),
-               base_ce=float(v["base_ce"].mean()), bank_ce=float(v["bank_ce"].mean()),
+               base_ce=float(v["base_ce"].mean()),   # val CE of the frozen base checkpoint (B4: base competence)
+               bank_ce=float(v["bank_ce"].mean()),
                improvement=float(gain.mean()))
     for name, tab in (("sem", sem), ("domain", dom)):
         g = tab.hard[torch.from_numpy(v["doc"])].numpy()

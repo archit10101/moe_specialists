@@ -1,7 +1,7 @@
 """Command-line entry point. Every stage of the pipeline is one sub-command.
 
   python -m repro.run list                                   experiments in the registry
-  python -m repro.run plan  [--tier core|ablation|all]       the job graph (what submit_all.sh submits)
+  python -m repro.run plan  [--tier core|ablation|all|paper|paper_extra]   the job graph (what submit_all.sh submits)
   python -m repro.run local [--tier ...]                     run the whole graph here, in order
   python -m repro.run prepare [--download]                   data (--download: login-node fetch only)
   python -m repro.run cluster
@@ -20,7 +20,7 @@ import os
 import sys
 import time
 
-from .config import EXPERIMENTS, get_experiment, get_profile, runnable
+from .config import EXPERIMENTS, TIERS, get_experiment, get_profile, runnable
 from .utils import log
 
 
@@ -71,7 +71,7 @@ def main(argv=None) -> None:
     ap.add_argument("--profile", default=os.environ.get("REPRO_PROFILE", "full"))
     ap.add_argument("--exp", default="")
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--tier", default="core", choices=["core", "ablation", "all"])
+    ap.add_argument("--tier", default="core", choices=list(TIERS))
     ap.add_argument("--only", default="", help="comma-separated experiment names (overrides --tier)")
     ap.add_argument("--download", action="store_true", help="prepare: only fetch the raw data (login node)")
     ap.add_argument("--format", default="table", choices=["table", "tsv"])
@@ -82,11 +82,19 @@ def main(argv=None) -> None:
     if a.command == "list":
         for e in EXPERIMENTS:
             flag = "" if runnable(p, e) else "   (not runnable in this profile)"
-            print(f"{e.name:28s} {e.kind:6s} {e.tier:8s} seeds={list(e.seeds)}  {e.doc}{flag}")
+            extra = "".join(f" {t}={list(v)}" for t, v in e.tier_seeds.items())
+            print(f"{e.name:28s} {e.kind:6s} {e.tier:8s} seeds={list(e.seeds)}{extra}  {e.doc}{flag}")
         return
     if a.command in ("plan", "local"):
         jobs = build_graph(p, a.tier, [x for x in a.only.split(",") if x] or None)
         if a.command == "plan":
+            if a.format != "tsv":
+                from collections import Counter
+                n_done = sum(j.done(p) for j in jobs)
+                by = Counter(j.stage for j in jobs)
+                print(f"# tier {a.tier} ({p.name}): {len(jobs)} jobs ("
+                      + ", ".join(f"{k} {by[k]}" for k in ("prepare", "cluster", "base", "bank", "router", "report") if by[k])
+                      + f"); {n_done} done")
             for j in jobs:
                 state = "done" if j.done(p) else "todo"
                 if a.format == "tsv":

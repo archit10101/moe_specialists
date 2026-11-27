@@ -30,6 +30,7 @@ the jobs into gaps, so the smoke test can start long before an H200 frees up.
 
 ```bash
 MAIL_USER=<you>@mit.edu ./slurm/launch.sh        # or: ./slurm/launch.sh --tier all   (adds the ablations)
+MAIL_USER=<you>@mit.edu ./slurm/launch.sh --tier paper   # the §23/§27 paper runs only (see "Paper tiers" below)
 ```
 
 `launch.sh` detaches itself (log: `$REPRO_WORK/logs/launch_<date>.log`), so you can log out right away.
@@ -128,14 +129,32 @@ With 2 GPUs per user at a time, expect about one to two days of wall time for th
 ./slurm/submit_all.sh --tier ablation  # B1–B10, see docs/ABLATIONS.md
 ```
 
+## Paper tiers (§23 specialists + §27 router, no EDL)
+
+For a paper on the post-hoc specialists and their causal router, run two tiers instead of `core`/`ablation`.
+`docs/ABLATIONS.md` lists exactly what is in them.
+
+```bash
+./slurm/launch.sh --tier paper              # must-run: 72 jobs (1 base model, 56 banks, 12 routers)
+./slurm/submit_all.sh --tier paper_extra    # if time allows: 16 more (3 base models, 11 banks, 2 routers)
+./slurm/status.sh --tier paper              # progress of one tier
+./slurm/report_now.sh                       # REPORT.md + PAPER.md, per_seed.csv, figures/ at any time
+```
+
+`paper_extra` reuses every job `paper` finished: the job keys and run directories are the same. With `--tier
+paper` the launcher also smoke-tests the `paper` graph. `python -m repro.run bench` prints projected GPU-hours for
+`paper` and `paper_extra` too.
+
 ## 6. Results
 
-`work/results/REPORT.md` contains a PASS/FAIL table for each claim, alongside the doc's numbers. Each
+`work/results/REPORT.md` contains a PASS/FAIL table for each claim, alongside the doc's numbers ("not run" for
+claims whose experiments are not in the run, e.g. §18 in the paper tiers). `work/results/PAPER.md` has the §23/§27
+paper analysis with uncertainty, `per_seed.csv` every per-seed number, and `figures/` the PNG/PDF figures. Each
 run also writes `work/runs/<experiment>/s<seed>/eval.json` (all metrics) and `train_log.json` (loss
 curves). To analyse in a cloud session, copy the small files back into the repo and push them:
 
 ```bash
-mkdir -p results_orcd && rsync -av --include='*/' --include='*.json' --include='REPORT.md' --exclude='*' work/ results_orcd/
+mkdir -p results_orcd && rsync -av --include='*/' --include='*.json' --include='*.md' --include='*.csv' --include='*.png' --include='*.pdf' --exclude='*' work/ results_orcd/
 git add results_orcd && git commit -m "ORCD results" && git push
 ```
 

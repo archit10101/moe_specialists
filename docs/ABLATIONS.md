@@ -4,16 +4,37 @@ All ablations are entries in `repro/config.py → EXPERIMENTS` with `tier="ablat
 `./slurm/submit_all.sh --tier ablation` once the core results look sane; any core job they need is
 pulled in automatically. Results land in the same `REPORT.md`.
 
+## Paper tiers (§23 specialists + §27 router, no EDL)
+
+Two tiers select exactly the runs for a paper on post-hoc subject specialists and the causal router. Membership
+is per experiment *and seed* (`Experiment.tier_seeds`, `config.seeds_for`); the §18 EDL family, B1–B3, B5 and
+the rest of B7/B10 stay defined but are in neither tier.
+
+| tier | contents | full-profile jobs |
+|---|---|---|
+| `paper` (must run) | `base.token4` seed 0 (with its 10/25/50% checkpoints); `bank.{sem,shuf,tok}` × 4 seeds; `router.{sem,shuf}` × 3 seeds; B4 `abl.bank_{sem,shuf,tok}_at{10,25,50}` × 4 seeds; B6 `abl.bank_dense_{compute,params}` × 4 seeds; B9 `abl.router_{sem,shuf}_bank{1,2,3}` | 72 (1 base, 56 banks, 12 routers, prepare, cluster, report) |
+| `paper_extra` (if time allows) | `base.token4` seeds 1–3 and B8 `abl.bank_{sem,shuf,tok}_base{1,2,3}`; `abl.bank_domain` (2 seeds); `abl.router_token_only`, `abl.router_ctx_only` | 16 new (3 bases, 11 banks, 2 routers); its plan also lists the `paper` jobs it depends on, which are skipped once done |
+
+```bash
+./slurm/submit_all.sh --tier paper            # or: ./slurm/launch.sh --tier paper
+./slurm/submit_all.sh --tier paper_extra      # later; reuses everything `paper` finished
+./slurm/report_now.sh                         # REPORT.md + PAPER.md, per_seed.csv, figures/
+```
+
+The report's `PAPER.md` gives every comparison paired over seeds (mean, 95% t-interval, n, sign count): the main
+§23/§27 table, B4 (with a per-seed slope of the gap against base val CE), B6, B9, the swap-matrix heatmap,
+router − G by position, and the B8 / explicit-domain / router-input sections once those runs exist.
+
 | ID | question | experiments | what would count as an answer |
 |---|---|---|---|
 | **B1** | Is the EDL CE gain sensitive to its strength? | `abl.edl_beta1e-3`, `abl.edl_beta2e-2` (2 seeds) | CE vs TOKEN-4 for β ∈ {1e-3, 5e-3, 2e-2}: a U-shape means the doc's 5e-3 was tuned; a flat curve means the gain is robust |
 | **B2** | Does EDL need every layer? | `abl.edl_upper` | upper-half EDL ≈ full EDL → the effect lives in late layers |
 | **B3** | Do *true* domain labels matter, or does any persistent grouping work? | `abl.edl_shuflabels` (explicit EDL on paper-permuted domain labels) | if ≈ explicit EDL in CE, the doc's §18 finding (most of the gain comes from grouping, not semantics) also holds for labels |
-| **B4** | **Your hypothesis: subject specialisation only pays once the base already "knows English"** | `abl.bank_{sem,shuf,tok}_at{10,25,50}` + the core banks at 100% | report table "B4": if the gap between semantic and generic banks (sem − tok) grows as the base checkpoint improves, the hypothesis is supported; if it is flat or shrinks, it is not |
+| **B4** | **Your hypothesis: subject specialisation only pays once the base already "knows English"** | `abl.bank_{sem,shuf,tok}_at{10,25,50}` (4 seeds) + the core banks at 100% | report table "B4": if the gap between semantic and generic banks (sem − tok) grows as the base checkpoint improves, the hypothesis is supported; if it is flat or shrinks, it is not |
 | **B5** | Granularity: are 16 specialists the sweet spot? (doc §29–30: K=5 lost to G) | `abl.bank_{sem,shuf,tok}_k{4,8,32}`, total width fixed at 4,096 units | sem − tok as a function of K |
-| **B6** | Is the gain routing or just extra capacity? | `abl.bank_dense_compute` (one 256-unit MLP, same compute per token), `abl.bank_dense_params` (one 4,096-unit MLP, same parameters) | the semantic bank must beat the compute-matched dense residual; beating the parameter-matched one would be strong evidence |
-| **B7** | Does cluster quality matter? | `abl.bank_minilm`, `abl.bank_tfidf`, `abl.bank_domain` (5 true domains) | improvement vs the e5 bank; the domain oracle bounds what coarse labels give |
-| **B8** | Does it depend on the particular base? | removed: core bank seed *s* now sits on TOKEN-4 seed *s* (as in the original), so the core banks already span 4 bases | sem > shuf and sem > tok on every base seed |
+| **B6** | Is the gain routing or just extra capacity? | `abl.bank_dense_compute` (one 256-unit MLP, same compute per token), `abl.bank_dense_params` (one 4,096-unit MLP, same parameters), 4 seeds each | the semantic bank must beat the compute-matched dense residual; beating the parameter-matched one would be strong evidence |
+| **B7** | Does cluster quality matter? | `abl.bank_minilm`, `abl.bank_tfidf`, `abl.bank_domain` (5 true domains) | improvement vs the bge-small bank; the domain oracle bounds what coarse labels give |
+| **B8** | Does it depend on the particular base? | `abl.bank_{sem,shuf,tok}_base{1,2,3}` (bank seed 0 on TOKEN-4 seeds 1–3; every other bank sits on seed 0) | sem > shuf and sem > tok on every base seed |
 | **B9** | **The doc's top open question (§32.3 #1):** does the router result replicate across *independently trained specialist banks*? | `abl.router_{sem,shuf}_bank{1,2,3}` | router − G < 0 on every bank seed |
 | **B10** | Which router design choices matter? | `abl.router_token_only`, `_ctx_only`, `_mlp`, `_ctx4`, `_ctx64`, `_sem0`, `_sem1`, `_ce_only` | router − G per variant; position breakdown shows whether context helps at starts and transitions |
 

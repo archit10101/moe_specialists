@@ -60,6 +60,7 @@ python -m repro.run local --profile smoke               # every stage end to end
 ./slurm/submit_all.sh --bench        # measured GPU-hours
 ./slurm/submit_all.sh                # core reproduction (37 jobs)
 ./slurm/submit_all.sh --tier ablation
+./slurm/launch.sh --tier paper       # §23/§27 paper runs only (72 jobs); later --tier paper_extra (docs/ABLATIONS.md)
 ./slurm/status.sh
 ```
 

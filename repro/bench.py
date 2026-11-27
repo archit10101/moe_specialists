@@ -89,12 +89,13 @@ def bench(p: Profile, reps: int = 3) -> dict:
                  bank=math.ceil(p.bank.tokens / tok_step) * res["bank_step_s"] / 3600 * 1.3,
                  router=math.ceil(p.router.tokens / tok_step) * res["router_step_s"] / 3600 * 1.3)
     res["projected_hours_per_job"] = hours
-    for tier in ("core", "all"):
+    for tier in ("core", "all", "paper", "paper_extra"):
         jobs = build_graph(p, tier)
         res[f"projected_gpu_hours_{tier}"] = sum(hours.get(j.stage, 0.3 if j.stage == "cluster" else 0) for j in jobs)
     log(f"bench on {res['gpu']}: {res['tokens_per_s_base']:,.0f} tok/s base training; projected hours per job "
         + ", ".join(f"{k} {v:.2f}" for k, v in hours.items())
-        + f"; core {res['projected_gpu_hours_core']:.1f} GPU-h, all {res['projected_gpu_hours_all']:.1f} GPU-h")
+        + "; " + ", ".join(f"{t} {res[f'projected_gpu_hours_{t}']:.1f} GPU-h"
+                           for t in ("core", "all", "paper", "paper_extra")))
     for k, v in hours.items():
         if v > 5.5:
             log(f"WARNING: a {k} job is projected at {v:.1f} h, above the 6 h limit; it will stop at the time budget "

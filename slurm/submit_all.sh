@@ -6,6 +6,7 @@
 #   ./slurm/submit_all.sh                     core experiments (the three positive results)
 #   ./slurm/submit_all.sh --tier ablation     the ablations B1-B10 (+ any core job they need)
 #   ./slurm/submit_all.sh --tier all          everything
+#   ./slurm/submit_all.sh --tier paper        the §23/§27 paper runs (docs/ABLATIONS.md); later --tier paper_extra
 #   ./slurm/submit_all.sh --only bank.sem,router.sem
 #   ./slurm/submit_all.sh --smoke             whole pipeline on the tiny synthetic profile (~15 min)
 #   ./slurm/submit_all.sh --bench             one GPU job timing each job type (do this first)
@@ -26,7 +27,7 @@ while [ $# -gt 0 ]; do
     --smoke) SMOKE=1 ;;
     --bench) BENCH=1 ;;
     --dry-run) DRY=1 ;;
-    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
     *) echo "unknown option $1" >&2; exit 2 ;;
   esac
   shift

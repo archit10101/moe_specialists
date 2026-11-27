@@ -51,17 +51,27 @@ Document the ablation in docs/ABLATIONS.md and the report if needed. Commit to a
 
 ```
 The real results from MIT ORCD are committed under results_orcd/ (eval.json and train_log.json per run,
-plus results/REPORT.md). Do not modify them. Read README.md, docs/RECONSTRUCTION.md and
-docs/source_history.md §18, §21, §23, §27, then:
+plus results/REPORT.md and PAPER.md). Do not modify them. They come from the "paper" tier and, if it
+was run, "paper_extra" (docs/ABLATIONS.md). The paper is about post-hoc subject specialists (§23) and
+the causal router that deploys them (§27); EDL (§18) was not run and is out of scope. Read README.md,
+docs/ABLATIONS.md, docs/RECONSTRUCTION.md and docs/source_history.md §23, §27 and §32, then:
 
 1. Regenerate the report from these results without writing into results_orcd/:
    `REPRO_WORK=results_orcd REPRO_REPORT_DIR=docs/report python -m repro.run report`
-   (if it fails, explain why rather than editing the result files).
-2. For each claim say whether it reproduced: our paired number vs the doc's, number of seeds and
-   sign consistency, and whether the confidence interval supports the verdict. Do not round FAILs up
-   to PASSes.
-3. Ablations: interpret B4 (does the semantic-vs-generic gap grow with base competence?), B5, B6
-   (routing vs capacity), B9 (replication across specialist seeds) and B10.
-4. Note where a reconstruction choice (docs/RECONSTRUCTION.md) could explain a disagreement with the doc.
-5. Write docs/RESULTS.md (a short findings write-up with tables) and commit it to a branch.
+   (if it fails, explain why rather than editing the result files). It writes REPORT.md, PAPER.md,
+   per_seed.csv and figures/ into docs/report.
+2. Main claims (PAPER.md "Main results"): semantic bank vs the frozen base, vs shuffled and vs the
+   token-routed bank G; exposure-matched specificity; router − G; the share of the oracle's
+   semantic-over-shuffled advantage the router retains. For each: our paired mean, 95% CI, n and sign
+   count vs the doc's number, and whether the CI supports the claim. Do not round FAILs up to PASSes.
+3. Ablations: B4 (does the semantic-vs-generic and semantic-vs-shuffled gap grow with base competence?
+   use the slope and its CI), B6 (routing vs capacity: compute- and parameter-matched dense residuals),
+   B9 (does router − G < 0 replicate across bank seeds 0-3?). If the paper_extra runs exist, also B8
+   (other base seeds), the explicit 5-domain oracle, and the router-input variants (token only vs
+   context only), plus the router-by-position table.
+4. Note where a reconstruction choice or a kept difference from the original (docs/RECONSTRUCTION.md)
+   could explain a disagreement with the doc, in particular that our §27 routes over the §23
+   paper-level banks rather than the original's region-level §26 banks.
+5. Write docs/RESULTS.md (a short findings write-up with the tables and the figures from docs/report)
+   and commit it to a branch.
 ```

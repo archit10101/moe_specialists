@@ -99,7 +99,7 @@ class BankCfg:
     specialists is the number of clusters in ``groups`` (token / dense routing use ``groups`` only to define
     that count)."""
     base: str = "base.token4"           # experiment providing the frozen base
-    base_seed: int = -1                 # -1: the bank's own run seed (original: seed s sits on TOKEN-4 seed s)
+    base_seed: int = 0                  # every bank sits on TOKEN-4 seed 0 (B8 varies it); -1 = the bank's run seed
     base_ckpt: str = "final"            # final | frac0.1 | frac0.25 | frac0.5
     routing: str = "oracle"             # oracle (group table) | token (learned top-1) | dense (always on)
     groups: str = "sem"                 # oracle group table (hard assignment per paper)
@@ -113,12 +113,17 @@ class BankCfg:
     warmup_steps: int = 50              # then constant (original)
     weight_decay: float = 0.1
     init_std: float = 0.02              # first matrix; the second starts at zero (bank == base at step 0)
-    stream_seed: int = 1000             # data order: identical for every seed and condition (original)
+    stream_seed: int = -1               # data order: -1 = 1000 + run seed (same rows for sem/shuf/tok/dense within a
+                                        # seed, a different order per seed); >= 0 fixes one order for every seed
     balance_coef: float = 0.01          # token router only
 
 
 def bank_base_seed(bc: "BankCfg", seed: int) -> int:
     return seed if bc.base_seed < 0 else bc.base_seed
+
+
+def bank_stream_seed(bc: "BankCfg", seed: int) -> int:
+    return 1000 + seed if bc.stream_seed < 0 else bc.stream_seed
 
 
 @dataclass(frozen=True)
@@ -244,9 +249,27 @@ class Experiment:
     router: dict = field(default_factory=dict)   # RouterCfg overrides (router only)
     priority: int = 1                   # scheduling order on a shared cluster: 0 first ... 3 last; within a
                                         # level lower seeds run first (slurm/submit_all.sh turns it into --nice)
+    tier_seeds: dict = field(default_factory=dict)   # extra tiers -> the seeds this experiment runs in them,
+                                        # e.g. {"paper": (0,), "paper_extra": (1, 2, 3)}; see seeds_for()
 
 
 SEEDS4 = (0, 1, 2, 3)
+TIERS = ("core", "ablation", "all", "paper", "paper_extra")
+
+
+def seeds_for(exp: "Experiment", tier: str) -> tuple:
+    """Seeds of an experiment in a tier: its tier_seeds entry if it has one for this tier, all its seeds for
+    tier "all" or its own tier (core / ablation), nothing otherwise. Seeds an experiment runs in another tier
+    are separate jobs with the same run ids, so running a second tier reuses whatever the first finished."""
+    if tier in exp.tier_seeds:
+        return tuple(exp.tier_seeds[tier])
+    if tier == "all" or tier == exp.tier:
+        return tuple(exp.seeds)
+    return ()
+
+
+PAPER = "paper"            # must-run tier for the §23 / §27 paper (docs/ABLATIONS.md)
+PAPER_EXTRA = "paper_extra"
 
 
 def _bank(r: str, **kw) -> dict:
@@ -263,7 +286,7 @@ def _bank(r: str, **kw) -> dict:
 EXPERIMENTS: list[Experiment] = [
     # ---------------- Stage 1: base models (doc §18 Phase 1) -------------------------------------
     Experiment("base.token4", "base", SEEDS4, "core", "§18 TOKEN-4 baseline",
-               save_fracs=(0.1, 0.25, 0.5), priority=0),
+               save_fracs=(0.1, 0.25, 0.5), priority=0, tier_seeds={PAPER: (0,), PAPER_EXTRA: (1, 2, 3)}),
     Experiment("base.edl", "base", SEEDS4, "core", "§3/§18 explicit-label EDL",
                edl=EDLCfg(groups="domain", beta=5e-3)),
     # C6 = all layers, sharpened soft labels, beta fixed at 5e-3 (original P1_C6/P1_SHUF configs; the doc's
@@ -284,51 +307,56 @@ EXPERIMENTS: list[Experiment] = [
                edl=EDLCfg(groups="domain_shuf", beta=5e-3), priority=3),
 
     # ---------------- Stage 2: residual banks on frozen token4 s0 (doc §23) -----------------------
-    Experiment("bank.sem", "bank", SEEDS4, "core", "§23 A: semantic oracle", bank=_bank("sem"), priority=0),
-    Experiment("bank.shuf", "bank", SEEDS4, "core", "§23 B: shuffled oracle", bank=_bank("shuf"), priority=0),
+    Experiment("bank.sem", "bank", SEEDS4, "core", "§23 A: semantic oracle", bank=_bank("sem"), priority=0,
+               tier_seeds={PAPER: SEEDS4}),
+    Experiment("bank.shuf", "bank", SEEDS4, "core", "§23 B: shuffled oracle", bank=_bank("shuf"), priority=0,
+               tier_seeds={PAPER: SEEDS4}),
     Experiment("bank.tok", "bank", SEEDS4, "core", "§23 C: learned token router (= generic bank G)",
-               bank=_bank("tok"), priority=0),
+               bank=_bank("tok"), priority=0, tier_seeds={PAPER: SEEDS4}),
     # B4: the "base must already know English" hypothesis - same banks on partially trained bases
-    *[Experiment(f"abl.bank_{r}_at{int(f * 100)}", "bank", (0, 1), "ablation",
+    *[Experiment(f"abl.bank_{r}_at{int(f * 100)}", "bank", SEEDS4, "ablation",
                  f"B4 {r} bank on the token4 checkpoint at {int(f * 100)}% of training",
-                 bank=_bank(r, base_ckpt=f"frac{f}"), priority=1)
+                 bank=_bank(r, base_ckpt=f"frac{f}"), priority=1, tier_seeds={PAPER: SEEDS4})
       for f in (0.1, 0.25, 0.5) for r in ("sem", "shuf", "tok")],
     # B5: granularity; total bank width fixed (total_hidden split over K specialists)
     *[Experiment(f"abl.bank_{r}_k{k}", "bank", (0, 1), "ablation", f"B5 {r} bank with K={k}",
                  bank=_bank(r, groups=f"sem_k{k}", width="split"), priority=2)
       for k in (4, 8, 32) for r in ("sem", "shuf", "tok")],
     # B6: is it routing or just capacity?
-    Experiment("abl.bank_dense_compute", "bank", (0, 1), "ablation",
+    Experiment("abl.bank_dense_compute", "bank", SEEDS4, "ablation",
                "B6 always-on residual, compute-matched (one 256-unit MLP)",
-               bank=dict(routing="dense", width="spec"), priority=1),
-    Experiment("abl.bank_dense_params", "bank", (0, 1), "ablation",
+               bank=dict(routing="dense", width="spec"), priority=1, tier_seeds={PAPER: SEEDS4}),
+    Experiment("abl.bank_dense_params", "bank", SEEDS4, "ablation",
                "B6 always-on residual, parameter-matched (one 4096-unit MLP)",
-               bank=dict(routing="dense", width="total"), priority=1),
+               bank=dict(routing="dense", width="total"), priority=1, tier_seeds={PAPER: SEEDS4}),
     # B7: cluster quality
     Experiment("abl.bank_minilm", "bank", (0, 1), "ablation", "B7 MiniLM clusters", bank=dict(groups="minilm"),
                priority=2),
     Experiment("abl.bank_tfidf", "bank", (0, 1), "ablation", "B7 tf-idf clusters", bank=dict(groups="tfidf"),
                priority=2),
     Experiment("abl.bank_domain", "bank", (0, 1), "ablation", "B7 explicit 5-domain oracle",
-               bank=dict(groups="domain", width="split"), priority=2),
-    # (B8 "other base seeds" is gone: core bank seed s now sits on TOKEN-4 seed s, as in the original)
+               bank=dict(groups="domain", width="split"), priority=2, tier_seeds={PAPER_EXTRA: (0, 1)}),
+    # B8: other base seeds (every other bank sits on TOKEN-4 seed 0)
+    *[Experiment(f"abl.bank_{r}_base{b}", "bank", (0,), "ablation", f"B8 {r} bank on token4 seed {b}",
+                 bank=_bank(r, base_seed=b), priority=2, tier_seeds={PAPER_EXTRA: (0,)})
+      for b in (1, 2, 3) for r in ("sem", "shuf", "tok")],
 
     # ---------------- Stage 3: causal current-context router (doc §27) ---------------------------
     Experiment("router.sem", "router", (0, 1, 2), "core", "§27 GRU router over the frozen semantic bank",
-               priority=0),
+               priority=0, tier_seeds={PAPER: (0, 1, 2)}),
     Experiment("router.shuf", "router", (0, 1, 2), "core", "§27 same recipe over the shuffled bank",
-               router=dict(bank="bank.shuf", prior_groups="sem_shuf"), priority=0),
+               router=dict(bank="bank.shuf", prior_groups="sem_shuf"), priority=0, tier_seeds={PAPER: (0, 1, 2)}),
     # B9: independent specialist-training seeds (doc §32.3 item 1)
     *[Experiment(f"abl.router_{r}_bank{s}", "router", (0,), "ablation",
                  f"B9 router on the {r} bank trained with seed {s}",
                  router=dict(bank=f"bank.{r}", prior_groups="sem" if r == "sem" else "sem_shuf", bank_seed=s),
-                 priority=1)
+                 priority=1, tier_seeds={PAPER: (0,)})
       for s in (1, 2, 3) for r in ("sem", "shuf")],
     # B10: router design
     Experiment("abl.router_token_only", "router", (0,), "ablation", "B10 input: current token only",
-               router=dict(inputs="token"), priority=2),
+               router=dict(inputs="token"), priority=2, tier_seeds={PAPER_EXTRA: (0,)}),
     Experiment("abl.router_ctx_only", "router", (0,), "ablation", "B10 input: context mean only",
-               router=dict(inputs="context"), priority=2),
+               router=dict(inputs="context"), priority=2, tier_seeds={PAPER_EXTRA: (0,)}),
     Experiment("abl.router_mlp", "router", (0,), "ablation", "B10 MLP instead of GRU", router=dict(arch="mlp"), priority=2),
     Experiment("abl.router_ctx4", "router", (0,), "ablation", "B10 context window 4", router=dict(ctx_window=4), priority=2),
     Experiment("abl.router_ctx64", "router", (0,), "ablation", "B10 context window 64",
