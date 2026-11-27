@@ -40,7 +40,7 @@ class Bank(nn.Module):
         for e, c in enumerate(counts):
             if c:
                 rows = order[start:start + c]
-                out[rows] = self.delta_one(x[rows], e)
+                out[rows] = self.delta_one(x[rows], e).to(out.dtype)   # bf16 under autocast
                 start += c
         if scale is not None:
             out = out * scale.reshape(-1, 1)

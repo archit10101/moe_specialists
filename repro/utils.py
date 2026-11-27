@@ -28,9 +28,12 @@ def device() -> torch.device:
 
 
 def autocast(dev: torch.device):
-    """bf16 autocast on CUDA, plain fp32 elsewhere."""
+    """bf16 autocast on CUDA, plain fp32 elsewhere. REPRO_CPU_AUTOCAST=1 turns on bf16 autocast on CPU too, so
+    CPU tests exercise the mixed-precision code paths a GPU run takes (dtype mismatches are GPU-only bugs)."""
     if dev.type == "cuda":
         return torch.autocast("cuda", dtype=torch.bfloat16)
+    if os.environ.get("REPRO_CPU_AUTOCAST") == "1":
+        return torch.autocast("cpu", dtype=torch.bfloat16)
     return nullcontext()
 
 

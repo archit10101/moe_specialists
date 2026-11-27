@@ -77,6 +77,17 @@ def test_bank_starts_at_base():
     assert torch.equal(b(h, torch.randint(0, 4, (2, 5))), h)
 
 
+def test_bank_runs_under_bf16_autocast():
+    """GPU runs use bf16 autocast; the specialists' bf16 outputs must be written into the fp32 buffer
+    (this crashed every bank job on the first GPU smoke test)."""
+    b = Bank(16, 4, 8)
+    torch.nn.init.normal_(b.w2, 0, 0.1)
+    h = torch.randn(2, 5, 16)
+    with torch.autocast("cpu", dtype=torch.bfloat16):
+        out = b(h, torch.randint(0, 4, (2, 5)))
+    assert out.shape == h.shape and torch.isfinite(out).all()
+
+
 # ------------------------------------------------------------------ EDL
 def test_edl_prefers_separated_groups():
     w = F.one_hot(torch.tensor([0] * 50 + [1] * 50), 2).float()
