@@ -19,7 +19,10 @@ from .config import EXPERIMENTS, Profile, bank_base_seed, bank_cfg, get_experime
 from .utils import data_dir, groups_dir, is_done, run_dir
 
 # per-job SLURM time limits (HH:MM:SS); the bench numbers in docs/ORCD.md explain them
-TIME = dict(prepare="01:00:00", cluster="02:00:00", base="06:00:00", bank="02:00:00", router="04:00:00",
+# measured on ORCD L40S: a bank ~6 min (+ a few min for the full-val swap matrix), a router ~70 min. Short limits
+# let SLURM backfill the jobs into gaps. A job that runs out of time saves a checkpoint; re-running
+# submit_all.sh resumes it.
+TIME = dict(prepare="01:00:00", cluster="02:00:00", base="06:00:00", bank="00:30:00", router="02:00:00",
             report="00:15:00")
 CPU_STAGES = {"prepare", "report"}
 

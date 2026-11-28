@@ -21,6 +21,9 @@ def test_smoke_pipeline_end_to_end(tmp_path):
     assert (res / "REPORT.md").exists()
     claims = json.loads((res / "summary.json").read_text())["claims"]
     assert all(c["verdict"] in ("PASS", "FAIL") for c in claims), "every claim should be evaluated"
+    # the bank swap matrix covers all of the evaluated val tokens, not a small probe
+    ev = json.loads((tmp_path / "smoke" / "runs" / "bank.sem" / "s0" / "eval.json").read_text())
+    assert ev["swap_tokens"] == ev["val_tokens"] if "val_tokens" in ev else ev["swap_tokens"] > 0
     # resuming a finished pipeline must be a no-op
     out = subprocess.run([sys.executable, "-m", "repro.run", "local", "--profile", "smoke"], cwd=ROOT, env=env,
                          check=True, capture_output=True, text=True).stdout

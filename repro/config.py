@@ -187,7 +187,9 @@ class ClusterCfg:
 class EvalCfg:
     val_tokens: int = 5_000_000         # CE on (up to) this many val tokens
     batch: int = 16
-    probe_windows_per_group: int = 24   # windows per group for ablation metrics (FSI, interaction)
+    probe_windows_per_group: int = 24   # windows per group for base-model ablation metrics (FSI, interaction)
+    swap_tokens: int = 5_000_000        # bank swap matrix: val tokens pushed through every specialist (all of val;
+                                        # with ~12k-token papers a small probe misses whole clusters)
     fsi_experts_per_layer: int = 2      # enriched experts removed per layer for group-ablation FSI
     interaction_layers: tuple = ()      # () = all layers
     min_routed: int = 200               # cells with fewer routed probe tokens are skipped
@@ -220,7 +222,7 @@ SMOKE = Profile(
     RouterCfg(hidden=16, tokens=150_000, lr=5e-3, scale_batches=4),
     ClusterCfg(embedder="tfidf", main_k=4, alt_ks=(8,), extra_embedders=("tfidf",), fit_docs=5_000,
                view_tokens=64, shuffle_bins=4),
-    EvalCfg(val_tokens=60_000, batch=16, probe_windows_per_group=6, min_routed=20),
+    EvalCfg(val_tokens=60_000, batch=16, probe_windows_per_group=6, min_routed=20, swap_tokens=60_000),
 )
 
 PROFILES = {"full": FULL, "smoke": SMOKE}

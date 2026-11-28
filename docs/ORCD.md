@@ -141,6 +141,19 @@ For a paper on the post-hoc specialists and their causal router, run two tiers i
 ./slurm/report_now.sh                       # REPORT.md + PAPER.md, per_seed.csv, figures/ at any time
 ```
 
+**Re-scoring banks.** Since commit "swap matrix on all of val", each bank's swap / specificity matrix is computed
+on all val tokens instead of a small probe. Banks evaluated before that have no `swap_tokens` in their
+`eval.json`. To re-run only their evaluation (minutes each; training is skipped):
+
+```bash
+./slurm/rescore_banks.sh --dry-run          # list them
+./slurm/rescore_banks.sh                    # re-score and re-submit the paper tier (or: ./slurm/rescore_banks.sh paper_extra)
+```
+
+**Time limits.** Banks request 30 min and routers 2 h (measured on L40S: about 6 min and 70 min). Short limits
+let SLURM backfill the jobs into gaps between longer jobs. To shorten the limits of jobs that are already queued:
+`squeue -u $USER -h -o '%i %j' | awk '$2 ~ /^repro_bank/ {print $1}' | xargs -I{} scontrol update JobId={} TimeLimit=00:30:00`.
+
 `paper_extra` reuses every job `paper` finished: the job keys and run directories are the same. With `--tier
 paper` the launcher also smoke-tests the `paper` graph. `python -m repro.run bench` prints projected GPU-hours for
 `paper` and `paper_extra` too.

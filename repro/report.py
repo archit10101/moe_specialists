@@ -489,8 +489,10 @@ def section_swap(p, out, figdir) -> str:
     if plt is not None:
         fig, axes = plt.subplots(1, len(mats), figsize=(5.4 * len(mats), 4.4), squeeze=False, constrained_layout=True)
         for ax, (n, (seed, M)) in zip(axes[0], mats.items()):
-            U = -M
-            U = U - np.nanmean(U, 1, keepdims=True) - np.nanmean(U, 0, keepdims=True) + np.nanmean(U)
+            ok = ~np.isnan(M).all(1)                  # clusters with no val tokens are left blank
+            U = np.full_like(M, np.nan)
+            Mo = -M[ok][:, ok]
+            U[np.ix_(ok, ok)] = Mo - Mo.mean(1, keepdims=True) - Mo.mean(0, keepdims=True) + Mo.mean()
             v = np.nanmax(np.abs(U)) or 1.0
             im = ax.imshow(U, cmap="RdBu_r", vmin=-v, vmax=v)
             k = U.shape[0]

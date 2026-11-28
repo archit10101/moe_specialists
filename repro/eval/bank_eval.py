@@ -49,14 +49,17 @@ def evaluate_bank(p: Profile, exp: Experiment, seed: int) -> dict:
     base, bm, bc = load_bank(p, exp.name, seed)
     sem, dom = GroupTable.load(p, "sem"), GroupTable.load(p, "domain")
     val = Split(p, "val")
-    v = bank_pass(base, bm, val, eval_windows(val, p.eval.val_tokens), p.eval.batch)
+    val_idx, swap_idx = eval_windows(val, p.eval.val_tokens), eval_windows(val, p.eval.swap_tokens)
+    # one pass computes the CE under every specialist too when the swap matrix covers the same windows
+    shared = bm.bank.n > 1 and len(swap_idx) == len(val_idx)
+    v = bank_pass(base, bm, val, val_idx, p.eval.batch, all_specs=shared)
     gain = v["base_ce"] - v["bank_ce"]
     res = dict(experiment=exp.name, seed=seed, routing=bc.routing, groups=bc.groups, n_spec=bm.bank.n,
                base=bc.base, base_seed=bank_base_seed(bc, seed), base_ckpt=bc.base_ckpt,
                hidden=bm.bank.hidden, params=sum(q.numel() for q in bm.bank.parameters()),
                base_ce=float(v["base_ce"].mean()),   # val CE of the frozen base checkpoint (B4: base competence)
                bank_ce=float(v["bank_ce"].mean()),
-               improvement=float(gain.mean()))
+               improvement=float(gain.mean()), val_tokens=int(len(gain)))
     for name, tab in (("sem", sem), ("domain", dom)):
         g = tab.hard[torch.from_numpy(v["doc"])].numpy()
         res[f"per_{name}_gain"] = [float(gain[g == k].mean()) if (g == k).any() else None for k in range(tab.k)]
@@ -67,9 +70,10 @@ def evaluate_bank(p: Profile, exp: Experiment, seed: int) -> dict:
     log(f"{exp.name}/s{seed}: base {res['base_ce']:.4f} bank {res['bank_ce']:.4f} "
         f"improvement {res['improvement']:+.5f}")
 
-    if bm.bank.n > 1:   # forced-equal-exposure swap matrix on a probe subset of val
-        n_win = p.eval.probe_windows_per_group * bm.bank.n
-        s = bank_pass(base, bm, val, eval_windows(val, n_win * p.model.ctx), p.eval.batch, all_specs=True)
+    if bm.bank.n > 1:   # forced-equal-exposure swap matrix: every val token through every specialist
+        s = v if shared else bank_pass(base, bm, val, swap_idx, p.eval.batch, all_specs=True)
+        res["swap_tokens"] = int(len(s["doc"]))
+        res["swap_papers"] = int(len(np.unique(s["doc"])))
         own_table = bm.table if bm.table is not None else (sem if sem.k == bm.bank.n else None)
         if own_table is not None:
             g = own_table.hard[torch.from_numpy(s["doc"])].numpy()

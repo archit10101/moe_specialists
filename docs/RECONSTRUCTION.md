@@ -71,7 +71,7 @@ Legend:
 | token router (C / G) | linear on RMSNorm(h) → top-1, gate scale p/p.detach(), Switch balance 0.01, no capacity limit | original |
 | training | 50M bank-split tokens the base never saw; 32×1,024 tokens per step (~1,526 steps); AdamW (0.9, 0.95), **lr 3e-4, 50-step warmup then constant, wd 0.1** | original (`orv1_paths.py`) |
 | data order | identical rows for every condition (sem / shuf / tok / dense) within a seed; a different order per seed (`stream_seed=-1` → 1000 + seed) | **differs**: the original used one order for every seed. With a single base, a fixed order would leave the bank initialisation as the only source of seed variance, which understates the uncertainty. `stream_seed=1000` restores one order |
-| specificity | double-centred diagonal of the forced swap matrix (≈0.94× the original's for K = 16); hierarchical bootstrap over papers within clusters | **differs**: the original's `functional()` compared own-cluster vs other-cluster tokens inside 675 strata. Compare signs and the semantic − shuffled contrast |
+| specificity | double-centred diagonal of the forced swap matrix (≈0.94× the original's for K = 16), computed on **all val tokens** (`EvalCfg.swap_tokens`, like the original's full-VAL matrices; a 384-window probe covered only ~30 real papers and missed clusters); hierarchical bootstrap over papers within clusters | **differs**: the original's `functional()` compared own-cluster vs other-cluster tokens inside 675 strata. Compare signs and the semantic − shuffled contrast |
 
 ## Router (§27)
 
